@@ -1,17 +1,20 @@
 import bcrypt from "bcryptjs";
 import mongoose, { Model, Schema } from "mongoose";
 
-type UserType = {
+export type UserType = {
+  id: mongoose.Types.ObjectId;
   name: string;
   email: string;
   password: string;
+  otp?: string;
+  otpExpiresAt?: Date;
   isVerified: boolean;
   isAdmin?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
   accessToken?: string;
   refreshToken?: string;
-  isPasswordCorrect?: (password: string) => Promise<boolean>;
+  isPasswordCorrect: (password: string) => Promise<boolean>;
 };
 
 const userSchema = new Schema<UserType>(
@@ -28,6 +31,12 @@ const userSchema = new Schema<UserType>(
     password: {
       type: String,
       required: true,
+    },
+    otp: {
+      type: String,
+    },
+    otpExpiresAt:{
+      type:Date
     },
     isVerified: {
       type: Boolean,
