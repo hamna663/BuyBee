@@ -2,10 +2,14 @@ import { connectToDatabase } from "@/config/db";
 import { generateTokens } from "@/lib/generateTokens";
 import { User } from "@/models/user";
 import { signInSchema } from "@/schemas/user";
+import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
 
-export const POST = async (req: NextRequest, res: NextResponse) => {
+export const POST = async (
+  req: NextRequest,
+  res: NextResponse,
+): Promise<NextResponse> => {
   try {
     const { email, password } = await req.json();
 
@@ -41,6 +45,13 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
 
     const { accessToken, refreshToken } = generateTokens(user);
 
+    (await cookies()).set("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      expires: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
+      sameSite: "lax",
+    });
+
     return NextResponse.json(
       {
         message: "User signed in successfully",
@@ -53,12 +64,7 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
           Authorization: "Bearer " + accessToken,
         },
       },
-    ).cookies.set("refreshToken", refreshToken, {
-      httpOnly: true,
-      secure: true,
-      expires: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000),
-      sameSite: "lax",
-    });
+    );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ errors: error.message }, { status: 400 });

@@ -1,4 +1,5 @@
 import EmailTemplate from "@/components/email-template";
+import { connectToDatabase } from "@/config/db";
 import { generateOtp } from "@/lib/generateOtp";
 import { resend } from "@/lib/resend";
 import { User } from "@/models/user";
@@ -9,7 +10,19 @@ export const GET = async (
   res: NextResponse,
 ): Promise<NextResponse> => {
   try {
-    const { email } = await req.json();
+    const { searchParams } = new URL(req.url);
+    const email = searchParams.get("email");
+    if (!email || email === "") {
+      return NextResponse.json(
+        {
+          message: "Email is required",
+        },
+        { status: 400 },
+      );
+    }
+
+    await connectToDatabase();
+
     const user = await User.findOne({ email });
 
     if (!user) {
@@ -59,6 +72,8 @@ export const POST = async (req: NextRequest, res: NextResponse) => {
         { status: 400 },
       );
     }
+
+    await connectToDatabase();
 
     const user = await User.findOne({ email });
     if (!user) {
