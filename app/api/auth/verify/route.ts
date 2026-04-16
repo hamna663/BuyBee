@@ -12,7 +12,7 @@ export const GET = async (
   try {
     const { searchParams } = new URL(req.url);
     const email = searchParams.get("email");
-    if (!email || email === "") {
+    if (!email || email.trim() === "") {
       return NextResponse.json(
         {
           message: "Email is required",
