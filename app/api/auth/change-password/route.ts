@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
 
 export const POST = withAuthenticatedUser(
-  async (req: NextRequest, res: NextResponse): Promise<NextResponse> => {
+  async (req: NextRequest): Promise<NextResponse> => {
     const { email, currentPassword, newPassword, confirmNewPassword } =
       await req.json();
     await connectToDatabase();

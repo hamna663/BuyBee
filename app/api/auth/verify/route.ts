@@ -5,10 +5,7 @@ import { resend } from "@/lib/resend";
 import { User } from "@/models/user";
 import { NextRequest, NextResponse } from "next/server";
 
-export const GET = async (
-  req: NextRequest,
-  res: NextResponse,
-): Promise<NextResponse> => {
+export const GET = async (req: NextRequest): Promise<NextResponse> => {
   try {
     const { searchParams } = new URL(req.url);
     const email = searchParams.get("email");
@@ -63,7 +60,8 @@ export const GET = async (
     );
   }
 };
-export const POST = async (req: NextRequest, res: NextResponse) => {
+
+export const POST = async (req: NextRequest): Promise<NextResponse> => {
   try {
     const { email, otp } = await req.json();
     if (!email || !otp) {

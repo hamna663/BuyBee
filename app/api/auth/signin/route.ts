@@ -6,10 +6,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
 
-export const POST = async (
-  req: NextRequest,
-  res: NextResponse,
-): Promise<NextResponse> => {
+export const POST = async (req: NextRequest): Promise<NextResponse> => {
   try {
     const { email, password } = await req.json();
 

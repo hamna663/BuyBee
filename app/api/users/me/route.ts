@@ -4,7 +4,7 @@ import { User } from "@/models/user";
 import { NextRequest, NextResponse } from "next/server";
 
 export const GET = withAuthenticatedUser(
-  async (req: NextRequest, res: NextResponse): Promise<NextResponse> => {
+  async (req: NextRequest): Promise<NextResponse> => {
     await connectToDatabase();
     try {
       console.log(req.headers.get("userId"));
@@ -44,7 +44,7 @@ export const GET = withAuthenticatedUser(
 );
 
 export const PATCH = withAuthenticatedUser(
-  async (req: NextRequest, res: NextResponse) => {
+  async (req: NextRequest): Promise<NextResponse> => {
     await connectToDatabase();
     try {
       const { name } = await req.json();
@@ -97,7 +97,7 @@ export const PATCH = withAuthenticatedUser(
 );
 
 export const DELETE = withAuthenticatedUser(
-  async (req: NextRequest, res: NextResponse) => {
+  async (req: NextRequest): Promise<NextResponse> => {
     await connectToDatabase();
     try {
       const user = await User.findByIdAndDelete(req.headers.get("userId"));

@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
 
 export const GET = withAuthenticatedUser(
-  async (req: NextRequest, res: NextResponse): Promise<NextResponse> => {
+  async (req: NextRequest): Promise<NextResponse> => {
     const { searchParams } = new URL(req.url);
     const email = searchParams.get("email");
     if (!email || email.trim() === "") {
@@ -69,7 +69,7 @@ export const GET = withAuthenticatedUser(
 );
 
 export const POST = withAuthenticatedUser(
-  async (req: NextRequest, res: NextResponse): Promise<NextResponse> => {
+  async (req: NextRequest): Promise<NextResponse> => {
     const { email, otp, password, confirmPassword } = await req.json();
     await connectToDatabase();
     try {

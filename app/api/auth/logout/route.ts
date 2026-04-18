@@ -2,7 +2,7 @@ import { withAuthenticatedUser } from "@/lib/middlewares/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 export const GET = withAuthenticatedUser(
-  async (req: NextRequest, res: NextResponse): Promise<NextResponse> => {
+  async (req: NextRequest): Promise<NextResponse> => {
     req.cookies?.delete("refreshToken");
     req.headers?.delete("Authorization");
     req.headers?.delete("userId");

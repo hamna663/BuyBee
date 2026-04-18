@@ -5,7 +5,7 @@ import { User } from "@/models/user";
 import { NextResponse, NextRequest } from "next/server";
 
 export const GET = withAuthenticatedUser(
-  withAdmin(async (req: NextRequest, ctx: RouteContext<"/api/users/[id]">) => {
+  withAdmin(async (req: NextRequest, ctx: RouteContext<"/api/users/[id]">):Promise<NextResponse> => {
     await connectToDatabase();
     try {
       const { id } = await ctx.params;
@@ -37,7 +37,7 @@ export const GET = withAuthenticatedUser(
 );
 
 export const DELETE = withAuthenticatedUser(
-  withAdmin(async (req: NextRequest, ctx: RouteContext<"/api/users/[id]">) => {
+  withAdmin(async (req: NextRequest, ctx: RouteContext<"/api/users/[id]">):Promise<NextResponse> => {
     await connectToDatabase();
     try {
       const { id } = await ctx.params;

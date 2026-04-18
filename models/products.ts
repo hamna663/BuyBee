@@ -4,6 +4,8 @@ type ProductType = {
   name: string;
   description: string;
   price: number;
+  images: string[];
+  categoryId: mongoose.Types.ObjectId;
   stock: number;
   available: boolean;
   averageRating: number;
@@ -25,6 +27,17 @@ const productSchema = new Schema<ProductType>(
       type: Number,
       required: true,
     },
+    categoryId: {
+      type: Schema.Types.ObjectId,
+      ref: "Category",
+      required: true,
+    },
+    images: [
+      {
+        type: String,
+        required: true,
+      },
+    ],
     stock: {
       type: Number,
       required: true,
