@@ -6,9 +6,11 @@ import { reviewSchema } from "@/schemas/reviews";
 import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
 
-export const GET = async (req: NextRequest): Promise<NextResponse> => {
-  const { searchParams } = new URL(req.url);
-  const productId = searchParams.get("id");
+export const GET = async (
+  req: NextRequest,
+  { params }: { params: { id: string } },
+): Promise<NextResponse> => {
+  const { id: productId } = await params;
 
   await connectToDatabase();
   try {
@@ -18,10 +20,7 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
-    const reviews = await Review.find({ product: productId }).populate(
-      "user",
-      "name",
-    );
+    const reviews = await Review.find({ productId }).populate("userId", "name");
     if (!reviews) {
       return NextResponse.json({ error: "No reviews found" }, { status: 404 });
     }
@@ -35,23 +34,19 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
 };
 
 export const POST = withAuthenticatedUser(
-  async (req: NextRequest): Promise<NextResponse> => {
-    const { searchParams } = new URL(req.url);
-    const productId = searchParams.get("id");
+  async (
+    req: NextRequest,
+    { params }: { params: { id: string } },
+  ): Promise<NextResponse> => {
+    const { id: productId } = await params;
     const { rating, comment } = await req.json();
     const userId = req.headers.get("userId");
     if (userId === null || userId.trim() === "") {
       return NextResponse.json({ error: "Unauthorized" });
     }
-    const data = await z.safeParseAsync(reviewSchema, { rating, comment });
     await connectToDatabase();
     try {
-      if (!data.success) {
-        return NextResponse.json(
-          { error: "Invalid review data" },
-          { status: 400 },
-        );
-      }
+      const data = await z.parseAsync(reviewSchema, { rating, comment });
       const product = await Product.findById(productId);
       if (!product) {
         return NextResponse.json(
@@ -60,8 +55,8 @@ export const POST = withAuthenticatedUser(
         );
       }
       const existingReview = await Review.findOne({
-        product: productId,
-        user: userId,
+        productId,
+        userId,
       });
       if (existingReview) {
         return NextResponse.json(
@@ -70,18 +65,31 @@ export const POST = withAuthenticatedUser(
         );
       }
       const review = new Review({
-        user: userId,
-        product: productId,
-        rating,
-        comment,
+        userId,
+        productId,
+        rating: data.rating,
+        comment: data.comment,
       });
       await review.save();
-      const reviews = await Review.find({ product: productId }).populate(
-        "user",
-        "name",
+      const reviews = await Review.find({ productId }).populate("userId", "name");
+      const products = await Product.findByIdAndUpdate(
+        { _id: productId },
+        {
+          averageRating:
+            reviews.reduce((acc, review) => acc + review.rating, 0) /
+            reviews.length,
+        },
+        { new: true },
       );
       return NextResponse.json({ reviews });
     } catch (error) {
+      if (error instanceof z.ZodError) {
+        return NextResponse.json(
+          { error: "Invalid review data", details: error.message },
+          { status: 400 },
+        );
+      }
+      console.log(error);
       return NextResponse.json(
         { error: "Failed to submit review" },
         { status: 500 },

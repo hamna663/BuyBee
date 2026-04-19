@@ -21,7 +21,7 @@ const safeString = z
 
 const optionalString = z.preprocess(
   (val) => (val === "" || val === null ? undefined : val),
-  safeString.optional()
+  safeString.optional(),
 );
 
 export const productQuerySchema = z.object({
@@ -29,4 +29,12 @@ export const productQuerySchema = z.object({
   category: optionalString,
   offset: z.number().int().nonnegative().max(1000).optional(),
   limit: z.number().int().positive().max(100).optional(),
+  rating: z.number().min(0).max(5).optional(),
+  minPrice: z.number().nonnegative().optional(),
+  maxPrice: z.number().nonnegative().optional(),
+  sortBy: z
+    .enum(["name", "price", "createdAt", "averageRating"])
+    .optional()
+    .default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
 });

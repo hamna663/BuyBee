@@ -1,11 +1,10 @@
 import mongoose, { Model, Schema } from "mongoose";
 
-type CartType = {
+export type CartType = {
   userId: mongoose.Types.ObjectId;
   items: [
     {
       productId: mongoose.Types.ObjectId;
-      quantity: number;
     },
   ];
   createdAt?: Date;
@@ -26,10 +25,6 @@ const cartSchema = new Schema<CartType>(
           ref: "Product",
           required: true,
         },
-        quantity: {
-          type: Number,
-          default: 1,
-        },
       },
     ],
   },
@@ -39,4 +34,4 @@ const cartSchema = new Schema<CartType>(
 );
 
 export const Cart: Model<CartType> =
-  mongoose.models.Cart || mongoose.model<CartType>("", cartSchema);
+  mongoose.models.Cart || mongoose.model<CartType>("Cart", cartSchema);

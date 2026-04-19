@@ -36,7 +36,7 @@ export const GET = withAuthenticatedUser(
       await user.save();
 
       const { data, error } = await resend.emails.send({
-        from: "Resend <onboarding@resend.dev>",
+        from: process.env.EMAIL_FROM!,
         to: email,
         subject: "Reset your password",
         react: EmailTemplate({

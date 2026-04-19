@@ -12,8 +12,7 @@ export const GET = async (
   req: NextRequest,
   { params }: { params: { id: string } },
 ): Promise<NextResponse> => {
-  const { id: productId } = await params;
-  console.log(productId);
+  const { id: productId } = params;
   if (!productId || productId.trim() === "") {
     return NextResponse.json(
       { error: "Product ID is required" },

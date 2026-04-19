@@ -32,7 +32,7 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
     await user.save();
 
     const { data, error } = await resend.emails.send({
-      from: "BuyBee <onboarding@resend.dev>",
+      from: process.env.EMAIL_FROM!,
       to: email,
       subject: "Verify your email",
       react: EmailTemplate({

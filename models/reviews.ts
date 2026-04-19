@@ -29,7 +29,7 @@ const reviewSchema = new Schema<ReviewType>(
     },
     comment: {
       type: String,
-      minlength: 20,
+      minlength: 10,
       required: true,
     },
   },

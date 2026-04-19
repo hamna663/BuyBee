@@ -4,6 +4,7 @@ import mongoose, { Schema, Model } from "mongoose";
 type AddressType = {
   street: string;
   city: string;
+  state: string;
   country: string;
   zipcode: string;
 };
@@ -17,7 +18,7 @@ type OrderType = {
     },
   ];
   address: AddressType;
-  status: ["pending", "processing", "shipped", "delivered", "cancelled"];
+  status: string;
   totalPrice: number;
   createdAt?: Date;
   updatedAt?: Date;
@@ -29,6 +30,10 @@ const addressSchema = new Schema<AddressType>({
     required: true,
   },
   city: {
+    type: String,
+    required: true,
+  },
+  state: {
     type: String,
     required: true,
   },
@@ -64,6 +69,15 @@ const orderSchema = new Schema<OrderType>(
     ],
     address: {
       type: addressSchema,
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ["pending", "processing", "shipped", "delivered", "cancelled"],
+      default: "pending",
+    },
+    totalPrice: {
+      type: Number,
       required: true,
     },
   },

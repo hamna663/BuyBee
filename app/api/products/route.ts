@@ -13,6 +13,11 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
   const offset = Number(searchParams.get("page") || "0");
   const limit = Number(searchParams.get("limit") || "10");
   const category = searchParams.get("category") || "";
+  const rating = Number(searchParams.get("rating"));
+  const minPrice = Number(searchParams.get("minPrice"));
+  const maxPrice = Number(searchParams.get("maxPrice"));
+  const sortBy = searchParams.get("sortBy") || "createdAt";
+  const sortOrder = searchParams.get("sortOrder") || "desc";
 
   await connectToDatabase();
   try {
@@ -21,6 +26,11 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
       offset,
       limit,
       category,
+      rating,
+      minPrice,
+      maxPrice,
+      sortBy,
+      sortOrder,
     });
 
     const escapeRegex = (str: string) =>
@@ -43,6 +53,24 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
             name: { $regex: data.search, $options: "i" },
           }),
 
+          ...(data.minPrice && {
+            price: { $gte: Number(data.minPrice) },
+          }),
+
+          ...(data.maxPrice && {
+            price: {
+              ...(data.minPrice && { $gte: Number(data.minPrice) }),
+              $lte: Number(data.maxPrice),
+            },
+          }),
+
+          ...(data.rating &&
+            !isNaN(Number(data.rating)) && {
+              $match: {
+                averageRating: { $gte: Number(data.rating) },
+              },
+            }),
+
           ...(data.category && {
             "category.name": {
               $regex: escapeRegex(data.category),
@@ -52,7 +80,7 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
         },
       },
 
-      { $sort: { createdAt: -1 } },
+      { $sort: { [data.sortBy]: data.sortOrder === "asc" ? 1 : -1 } },
       { $skip: Math.max(0, data.offset || 0) },
       { $limit: Math.min(data.limit || 10, 50) },
 
