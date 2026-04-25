@@ -1,18 +1,23 @@
 import { connectToDatabase } from "@/config/db";
 import { withAdmin } from "@/lib/middlewares/admin";
 import { withAuthenticatedUser } from "@/lib/middlewares/auth";
-import { Product } from "@/models/products";
+import { Product, ProductType } from "@/models/products";
+import { CategoryType } from "@/models/category";
 import "@/models/category";
 import { productSchema } from "@/schemas/product";
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
 import z from "zod";
 
+type PopulatedProduct = Omit<ProductType, "categoryId"> & {
+  categoryId: CategoryType;
+};
+
 export const GET = async (
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> => {
-  const { id: productId } = params;
+  const { id: productId } = await params;
   if (!productId || productId.trim() === "") {
     return NextResponse.json(
       { error: "Product ID is required" },
@@ -48,9 +53,8 @@ export const GET = async (
 };
 
 export const PUT = withAuthenticatedUser(
-  withAdmin(async (req: NextRequest): Promise<NextResponse> => {
-    const { searchParams } = new URL(req.url);
-    const productId = searchParams.get("id");
+  withAdmin(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }): Promise<NextResponse> => {
+    const { id: productId } = await params;
     if (!productId || productId.trim() === "") {
       return NextResponse.json(
         { error: "Product ID is required" },
@@ -62,7 +66,7 @@ export const PUT = withAuthenticatedUser(
 
     await connectToDatabase();
     try {
-      const data = await z.parseAsync(productSchema, {
+      const data = await productSchema.parseAsync({
         name,
         price,
         description,
@@ -70,13 +74,18 @@ export const PUT = withAuthenticatedUser(
         images,
         category,
       });
-      const product = await Product.findByIdAndUpdate(
+      const product = (await Product.findByIdAndUpdate(
+        productId,
         {
-          _id: productId,
+          name: data.name,
+          price: data.price,
+          description: data.description,
+          stock: data.stock,
+          images: data.images,
+          categoryId: data.category,
         },
-        data,
         { new: true },
-      ).populate("categoryId", "name");
+      ).populate("categoryId", "name")) as unknown as PopulatedProduct;
       if (!product) {
         return NextResponse.json(
           { error: "Product not found" },
@@ -94,7 +103,7 @@ export const PUT = withAuthenticatedUser(
           images: product.images,
           available: product.available,
           averageRating: product.averageRating,
-          category: (product.categoryId as any).name,
+          category: product.categoryId.name,
         },
       });
     } catch (error) {
@@ -119,9 +128,8 @@ export const PUT = withAuthenticatedUser(
 );
 
 export const DELETE = withAuthenticatedUser(
-  withAdmin(async (req: NextRequest): Promise<NextResponse> => {
-    const { searchParams } = new URL(req.url);
-    const productId = searchParams.get("id");
+  withAdmin(async (req: NextRequest, { params }: { params: Promise<{ id: string }> }): Promise<NextResponse> => {
+    const { id: productId } = await params;
     if (!productId || productId.trim() === "") {
       return NextResponse.json(
         { error: "Product ID is required" },
@@ -139,6 +147,7 @@ export const DELETE = withAuthenticatedUser(
       }
       return NextResponse.json({ message: "Product deleted successfully" });
     } catch (error) {
+      console.error("Product deletion error:", error);
       return NextResponse.json(
         { error: "Failed to delete product" },
         { status: 500 },

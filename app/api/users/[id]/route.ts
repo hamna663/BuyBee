@@ -28,6 +28,7 @@ export const GET = withAuthenticatedUser(
         { status: 200 },
       );
     } catch (error) {
+      console.error("User fetch error:", error);
       return NextResponse.json(
         { error: "Failed to fetch user" },
         { status: 500 },
@@ -50,6 +51,7 @@ export const DELETE = withAuthenticatedUser(
         { status: 200 },
       );
     } catch (error) {
+      console.error("User deletion error:", error);
       return NextResponse.json(
         { error: "Failed to delete user" },
         { status: 500 },

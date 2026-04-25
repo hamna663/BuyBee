@@ -11,7 +11,7 @@ export const POST = withAuthenticatedUser(
       await req.json();
     await connectToDatabase();
     try {
-      const data = await z.parseAsync(changePasswordSchema, {
+      const data = await changePasswordSchema.parseAsync({
         email,
         currentPassword,
         newPassword,

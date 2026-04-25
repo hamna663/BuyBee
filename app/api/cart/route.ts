@@ -20,6 +20,7 @@ export const GET = withAuthenticatedUser(
       }
       return NextResponse.json({ cart }, { status: 200 });
     } catch (error) {
+      console.error("Cart fetch error:", error);
       return NextResponse.json(
         { error: "Failed to fetch cart" },
         { status: 500 },
@@ -32,7 +33,7 @@ export const POST = withAuthenticatedUser(
     await connectToDatabase();
     try {
       const userId = req.headers.get("userId");
-      const { productId } = await req.json();
+      const { productId, quantity = 1 } = await req.json();
       let cart = await Cart.findOne({ userId });
       if (!cart) {
         cart = new Cart({ userId, items: [] });
@@ -41,15 +42,15 @@ export const POST = withAuthenticatedUser(
         (item) => item.productId.toString() === productId,
       );
       if (existingItemIndex !== -1) {
-        return NextResponse.json(
-          { message: "Product already in cart" },
-          { status: 400 },
-        );
+        // Increment quantity if already in cart
+        cart.items[existingItemIndex].quantity = (cart.items[existingItemIndex].quantity || 0) + quantity;
+      } else {
+        cart.items.push({ productId, quantity });
       }
-      cart.items.push({ productId });
       await cart.save();
       return NextResponse.json({ cart }, { status: 200 });
     } catch (error) {
+      console.error("Cart update error:", error);
       return NextResponse.json(
         { error: "Failed to update cart" },
         { status: 500 },

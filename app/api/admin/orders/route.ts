@@ -23,7 +23,8 @@ export const GET = withAuthenticatedUser(
         .sort({ [sort]: -1 })
         .skip(offset)
         .limit(limit)
-        .populate("user", "name email");
+        .populate("userId", "name email")
+        .populate("items.productId");
       const total = await Order.countDocuments({
         ...(status !== "all" && { status }),
         ...(from && { createdAt: { $gte: new Date(from) } }),

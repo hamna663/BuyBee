@@ -1,6 +1,6 @@
 import mongoose, { Model, Schema } from "mongoose";
 
-type ReviewType = {
+export type ReviewType = {
   userId: mongoose.Types.ObjectId;
   productId: mongoose.Types.ObjectId;
   rating: number;

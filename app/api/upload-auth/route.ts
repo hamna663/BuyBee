@@ -1,7 +1,7 @@
 import { getUploadAuthParams } from "@imagekit/next/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export async function GET(req: NextRequest): Promise<NextResponse> {
+export async function GET(): Promise<NextResponse> {
   try {
     const { token, expire, signature } = getUploadAuthParams({
       privateKey: process.env.IMAGEKIT_PRIVATE_KEY as string,
@@ -15,6 +15,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
     });
   } catch (error) {
+    console.error("Upload auth error:", error);
     return NextResponse.json(
       { error: "Failed to get upload auth params" },
       { status: 500 },

@@ -1,11 +1,16 @@
 import { connectToDatabase } from "@/config/db";
 import { withAdmin } from "@/lib/middlewares/admin";
 import { withAuthenticatedUser } from "@/lib/middlewares/auth";
-import { Product } from "@/models/products";
+import { Product, ProductType } from "@/models/products";
+import { CategoryType } from "@/models/category";
 import "@/models/category";
 import { productQuerySchema, productSchema } from "@/schemas/product";
 import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
+
+type PopulatedProduct = Omit<ProductType, "categoryId"> & {
+  categoryId: CategoryType;
+};
 
 export const GET = async (req: NextRequest): Promise<NextResponse> => {
   const { searchParams } = new URL(req.url);
@@ -21,7 +26,7 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
 
   await connectToDatabase();
   try {
-    const data = await z.parseAsync(productQuerySchema, {
+    const data = await productQuerySchema.parseAsync({
       search,
       offset,
       limit,
@@ -45,7 +50,7 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
           as: "category",
         },
       },
-      { $unwind: "$category" },
+      { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
 
       {
         $match: {
@@ -82,7 +87,7 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
 
       { $sort: { [data.sortBy]: data.sortOrder === "asc" ? 1 : -1 } },
       { $skip: Math.max(0, data.offset || 0) },
-      { $limit: Math.min(data.limit || 10, 50) },
+      { $limit: Math.min(data.limit || 10, 1000) },
 
       {
         $project: {
@@ -93,7 +98,8 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
           stock: 1,
           createdAt: 1,
           updatedAt: 1,
-          category: { name: 1 },
+          averageRating: 1,
+          categoryId: { _id: "$category._id", name: "$category.name" },
         },
       },
     ]);
@@ -145,17 +151,18 @@ export const POST = withAuthenticatedUser(
         );
       }
       await product.populate("categoryId");
+      const populatedProduct = product as unknown as PopulatedProduct;
       return NextResponse.json({
         message: "Product created successfully",
         product: {
-          id: product._id,
-          name: product.name,
-          price: product.price,
-          description: product.description,
-          images: product.images,
-          stock: product.stock,
-          category: (product.categoryId as any)?.name,
-          available: product.available,
+          id: populatedProduct._id,
+          name: populatedProduct.name,
+          price: populatedProduct.price,
+          description: populatedProduct.description,
+          images: populatedProduct.images,
+          stock: populatedProduct.stock,
+          category: populatedProduct.categoryId?.name,
+          available: populatedProduct.available,
         },
       });
     } catch (error) {

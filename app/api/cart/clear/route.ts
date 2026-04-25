@@ -11,6 +11,7 @@ export const GET = withAuthenticatedUser(
       await Cart.findOneAndUpdate({ userId }, { items: [] });
       return NextResponse.json({ message: "Cart cleared" }, { status: 200 });
     } catch (error) {
+      console.error("Cart clear error:", error);
       return NextResponse.json(
         { error: "Failed to clear cart" },
         { status: 500 },

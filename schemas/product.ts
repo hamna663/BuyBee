@@ -28,7 +28,7 @@ export const productQuerySchema = z.object({
   search: optionalString,
   category: optionalString,
   offset: z.number().int().nonnegative().max(1000).optional(),
-  limit: z.number().int().positive().max(100).optional(),
+  limit: z.number().int().positive().max(1000).optional(),
   rating: z.number().min(0).max(5).optional(),
   minPrice: z.number().nonnegative().optional(),
   maxPrice: z.number().nonnegative().optional(),

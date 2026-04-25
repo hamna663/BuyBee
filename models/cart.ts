@@ -2,11 +2,10 @@ import mongoose, { Model, Schema } from "mongoose";
 
 export type CartType = {
   userId: mongoose.Types.ObjectId;
-  items: [
-    {
-      productId: mongoose.Types.ObjectId;
-    },
-  ];
+  items: {
+    productId: mongoose.Types.ObjectId;
+    quantity: number;
+  }[];
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -24,6 +23,10 @@ const cartSchema = new Schema<CartType>(
           type: Schema.Types.ObjectId,
           ref: "Product",
           required: true,
+        },
+        quantity: {
+          type: Number,
+          default: 1,
         },
       },
     ],

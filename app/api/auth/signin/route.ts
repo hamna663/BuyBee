@@ -10,7 +10,7 @@ export const POST = async (req: NextRequest): Promise<NextResponse> => {
   try {
     const { email, password } = await req.json();
 
-    const data = await z.parseAsync(signInSchema, { email, password });
+    const data = await signInSchema.parseAsync({ email, password });
 
     await connectToDatabase();
     const user = await User.findOne({ email: data.email });
@@ -54,6 +54,7 @@ export const POST = async (req: NextRequest): Promise<NextResponse> => {
         message: "User signed in successfully",
         accessToken,
         refreshToken,
+        role: user.isAdmin ? "admin" : "user",
       },
       {
         status: 200,

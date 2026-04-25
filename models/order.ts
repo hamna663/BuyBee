@@ -1,7 +1,6 @@
-import { Address } from "cluster";
 import mongoose, { Schema, Model } from "mongoose";
 
-type AddressType = {
+export type AddressType = {
   street: string;
   city: string;
   state: string;
@@ -9,17 +8,17 @@ type AddressType = {
   zipcode: string;
 };
 
-type OrderType = {
+export type OrderType = {
   userId: mongoose.Types.ObjectId;
-  items: [
-    {
-      productId: mongoose.Types.ObjectId;
-      quantity: number;
-    },
-  ];
+  items: {
+    productId: mongoose.Types.ObjectId;
+    quantity: number;
+    price: number;
+  }[];
   address: AddressType;
   status: string;
   totalPrice: number;
+  stripeSessionId?: string;
   createdAt?: Date;
   updatedAt?: Date;
 };
@@ -65,6 +64,10 @@ const orderSchema = new Schema<OrderType>(
           type: Number,
           required: true,
         },
+        price: {
+          type: Number,
+          required: true,
+        },
       },
     ],
     address: {
@@ -79,6 +82,9 @@ const orderSchema = new Schema<OrderType>(
     totalPrice: {
       type: Number,
       required: true,
+    },
+    stripeSessionId: {
+      type: String,
     },
   },
   {

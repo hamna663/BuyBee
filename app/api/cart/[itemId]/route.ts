@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 export const PUT = withAuthenticatedUser(
   async (
     req: NextRequest,
-    { params }: { params: { itemId: string } },
+    { params }: { params: Promise<{ itemId: string }> },
   ): Promise<NextResponse> => {
     await connectToDatabase();
     const { itemId } = await params;
@@ -15,29 +15,24 @@ export const PUT = withAuthenticatedUser(
       if (!userId) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
-      console.log(itemId);
-      const cart = await Cart.findOne({
-        userId,
-        items: { $elemMatch: { productId: itemId } },
-      });
+      const { quantity } = await req.json();
+      
+      const cart = await Cart.findOneAndUpdate(
+        { userId, "items.productId": itemId },
+        { $set: { "items.$.quantity": quantity } },
+        { new: true }
+      ).populate("items.productId", "name price images");
+
       if (!cart) {
         return NextResponse.json(
           { message: "Cart item not found" },
           { status: 404 },
         );
       }
-      const item = cart.items.find((i) => i.productId.toString() === itemId);
-      if (item) {
-        await cart.save();
-        return NextResponse.json({ cart }, { status: 200 });
-      } else {
-        return NextResponse.json(
-          { message: "Cart item not found" },
-          { status: 404 },
-        );
-      }
+
+      return NextResponse.json({ cart }, { status: 200 });
     } catch (error) {
-      console.log(error);
+      console.error("Cart update error:", error);
       return NextResponse.json(
         { error: "Failed to update cart item" },
         { status: 500 },
@@ -45,31 +40,31 @@ export const PUT = withAuthenticatedUser(
     }
   },
 );
+
 export const DELETE = withAuthenticatedUser(
   async (
     req: NextRequest,
-    { params }: { params: { itemId: string } },
+    { params }: { params: Promise<{ itemId: string }> },
   ): Promise<NextResponse> => {
     const { itemId } = await params;
     await connectToDatabase();
     try {
       const userId = req.headers.get("userId");
-      const cart = await Cart.findOne({
-        userId,
-        "items.productId": itemId,
-      });
+      const cart = await Cart.findOneAndUpdate(
+        { userId },
+        { $pull: { items: { productId: itemId } } },
+        { new: true }
+      ).populate("items.productId", "name price images");
+
       if (!cart) {
         return NextResponse.json(
-          { message: "Cart item not found" },
+          { message: "Cart not found" },
           { status: 404 },
         );
       }
-      cart.items = cart.items.filter(
-        (item) => item.productId.toString() !== itemId,
-      ) as typeof cart.items;
-      await cart.save();
       return NextResponse.json({ cart }, { status: 200 });
     } catch (error) {
+      console.error("Cart delete error:", error);
       return NextResponse.json(
         { error: "Failed to delete cart item" },
         { status: 500 },

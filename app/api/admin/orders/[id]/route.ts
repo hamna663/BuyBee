@@ -1,13 +1,13 @@
 import { connectToDatabase } from "@/config/db";
-import { withAdmin } from "@/lib/middlewares/admin";
+import { withAdmin, RouteContext } from "@/lib/middlewares/admin";
 import { withAuthenticatedUser } from "@/lib/middlewares/auth";
 import { Order } from "@/models/order";
 import { NextRequest, NextResponse } from "next/server";
 
 export const PUT = withAuthenticatedUser(
   withAdmin(
-    async (req: NextRequest, params: { id: string }): Promise<NextResponse> => {
-      const { id } = params;
+    async (req: NextRequest, context: RouteContext<{ id: string }>): Promise<NextResponse> => {
+      const { id } = await context.params;
       const { status } = await req.json();
       if (
         status !== "pending" &&

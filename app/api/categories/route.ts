@@ -6,7 +6,7 @@ import { categorySchema } from "@/schemas/category";
 import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
 
-export const GET = async (req: NextRequest): Promise<NextResponse> => {
+export const GET = async (): Promise<NextResponse> => {
   await connectToDatabase();
   try {
     const categories = await Category.aggregate([
@@ -32,6 +32,7 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
 
     return NextResponse.json({ categories });
   } catch (error) {
+    console.error("Category fetch error:", error);
     return NextResponse.json(
       { error: "Failed to fetch categories" },
       { status: 500 },
@@ -44,7 +45,7 @@ export const POST = withAuthenticatedUser(
     const { name, description, images } = await req.json();
     await connectToDatabase();
     try {
-      const data = await z.parseAsync(categorySchema, {
+      const data = await categorySchema.parseAsync({
         name,
         description,
         images,

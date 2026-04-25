@@ -8,7 +8,7 @@ import z from "zod";
 
 export const GET = async (
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> => {
   const { id: productId } = await params;
 
@@ -26,6 +26,7 @@ export const GET = async (
     }
     return NextResponse.json({ product, reviews });
   } catch (error) {
+    console.error("Review fetch error:", error);
     return NextResponse.json(
       { error: "Failed to fetch reviews" },
       { status: 500 },
@@ -36,7 +37,7 @@ export const GET = async (
 export const POST = withAuthenticatedUser(
   async (
     req: NextRequest,
-    { params }: { params: { id: string } },
+    { params }: { params: Promise<{ id: string }> },
   ): Promise<NextResponse> => {
     const { id: productId } = await params;
     const { rating, comment } = await req.json();
@@ -46,7 +47,7 @@ export const POST = withAuthenticatedUser(
     }
     await connectToDatabase();
     try {
-      const data = await z.parseAsync(reviewSchema, { rating, comment });
+      const data = await reviewSchema.parseAsync({ rating, comment });
       const product = await Product.findById(productId);
       if (!product) {
         return NextResponse.json(
@@ -72,7 +73,7 @@ export const POST = withAuthenticatedUser(
       });
       await review.save();
       const reviews = await Review.find({ productId }).populate("userId", "name");
-      const products = await Product.findByIdAndUpdate(
+      await Product.findByIdAndUpdate(
         { _id: productId },
         {
           averageRating:

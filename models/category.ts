@@ -1,6 +1,7 @@
 import mongoose, { Model, Schema } from "mongoose";
 
-type CategoryType = {
+export type CategoryType = {
+  _id: string;
   name: string;
   description: string;
   images: string[];

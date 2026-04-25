@@ -7,7 +7,7 @@ import z from "zod";
 export const POST = async (req: NextRequest): Promise<NextResponse> => {
   try {
     const { name, email, password, confirmPassword } = await req.json();
-    const data = await z.parseAsync(signUpSchema, {
+    const data = await signUpSchema.parseAsync({
       name,
       email,
       password,

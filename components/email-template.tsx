@@ -1,5 +1,3 @@
-import React from "react";
-
 export interface EmailTemplateProps {
   name: string;
   otp: string;

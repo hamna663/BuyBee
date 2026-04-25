@@ -1,6 +1,7 @@
 import mongoose, { Model, Schema } from "mongoose";
 
-type ProductType = {
+export type ProductType = {
+  _id: string;
   name: string;
   description: string;
   price: number;

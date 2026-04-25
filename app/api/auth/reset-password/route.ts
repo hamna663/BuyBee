@@ -35,7 +35,7 @@ export const GET = withAuthenticatedUser(
       user.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
       await user.save();
 
-      const { data, error } = await resend.emails.send({
+      const { error } = await resend.emails.send({
         from: process.env.EMAIL_FROM!,
         to: email,
         subject: "Reset your password",
@@ -73,7 +73,7 @@ export const POST = withAuthenticatedUser(
     const { email, otp, password, confirmPassword } = await req.json();
     await connectToDatabase();
     try {
-      const data = await z.parseAsync(passwordResetSchema, {
+      const data = await passwordResetSchema.parseAsync({
         email,
         otp,
         password,

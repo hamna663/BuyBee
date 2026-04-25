@@ -31,7 +31,7 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
     user.otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
     await user.save();
 
-    const { data, error } = await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: process.env.EMAIL_FROM!,
       to: email,
       subject: "Verify your email",

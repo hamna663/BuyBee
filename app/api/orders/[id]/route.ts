@@ -6,13 +6,13 @@ import { NextRequest, NextResponse } from "next/server";
 export const GET = withAuthenticatedUser(
   async (
     req: NextRequest,
-    { params }: { params: { id: string } },
+    { params }: { params: Promise<{ id: string }> },
   ): Promise<NextResponse> => {
     const userId = req.headers.get("userId");
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const orderId = params.id;
+    const { id: orderId } = await params;
     await connectToDatabase();
     try {
       const orders = await Order.find({ userId, _id: orderId }).populate(
@@ -23,6 +23,7 @@ export const GET = withAuthenticatedUser(
       }
       return NextResponse.json(orders);
     } catch (error) {
+      console.error("Order fetch error:", error);
       return NextResponse.json(
         { error: "Failed to fetch orders" },
         { status: 500 },
@@ -34,13 +35,13 @@ export const GET = withAuthenticatedUser(
 export const PUT = withAuthenticatedUser(
   async (
     req: NextRequest,
-    { params }: { params: { id: string } },
+    { params }: { params: Promise<{ id: string }> },
   ): Promise<NextResponse> => {
     const userId = req.headers.get("userId");
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const orderId = params.id;
+    const { id: orderId } = await params;
     await connectToDatabase();
     try {
       const order = await Order.findOneAndUpdate(
@@ -56,6 +57,7 @@ export const PUT = withAuthenticatedUser(
         order,
       });
     } catch (error) {
+      console.error("Order cancel error:", error);
       return NextResponse.json(
         { error: "Failed to cancel order" },
         { status: 500 },
