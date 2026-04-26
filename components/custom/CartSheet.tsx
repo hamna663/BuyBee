@@ -83,26 +83,32 @@ export function CartSheet({ trigger }: { trigger: React.ReactElement }) {
     }
   }, [isOpen]);
 
-  const removeItem = async (productId: string) => {
-    const token = localStorage.getItem("token");
+  const updateQuantity = async (productId: string, newQty: number) => {
+    const token = localStorage.getItem('token');
     try {
-      const res = await fetch("/api/cart", {
-        method: "DELETE",
+      const res = await fetch('/api/cart', {
+        method: 'PATCH',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ productId }),
+        body: JSON.stringify({ productId, quantity: newQty }),
       });
-
       if (res.ok) {
-        toast.success("Item removed");
+        toast.success('Cart updated');
         fetchCart();
-        window.dispatchEvent(new Event("cartUpdated"));
+        window.dispatchEvent(new Event('cartUpdated'));
+      } else {
+        const err = await res.json();
+        toast.error(err.error || 'Failed to update cart');
       }
-    } catch (error: unknown) {
-      toast.error((error as Error).message);
+    } catch (e) {
+      toast.error((e as Error).message);
     }
+  };
+
+  const removeItem = async (productId: string) => {
+    await updateQuantity(productId, 0);
   };
 
   const handleCheckout = async (e: React.FormEvent) => {
@@ -190,9 +196,24 @@ export function CartSheet({ trigger }: { trigger: React.ReactElement }) {
                             <HugeiconsIcon icon={Trash} className="h-4 w-4" />
                           </Button>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          Qty: {item.quantity}
-                        </p>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => updateQuantity(item.productId._id, item.quantity - 1)}
+                disabled={item.quantity <= 1}
+              >
+                -
+              </Button>
+              <span className="px-2 font-medium">{item.quantity}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => updateQuantity(item.productId._id, item.quantity + 1)}
+              >
+                +
+              </Button>
+            </div>
                       </div>
                       <div className="flex justify-between items-end">
                         <p className="font-black text-primary">

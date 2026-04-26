@@ -1,6 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense, useCallback } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -40,6 +50,8 @@ import {
   Trash,
   ViewIcon,
   ShoppingCartIcon,
+  CreditCardIcon,
+  PresentationIcon,
 } from "@hugeicons/core-free-icons";
 import { cn } from "@/lib/utils";
 import { OrderType } from "@/models/order";
@@ -63,6 +75,7 @@ type Order = {
     country: string;
     zipcode: string;
   };
+  stripeSessionId?: string;
   createdAt: string;
 };
 
@@ -102,10 +115,25 @@ type Stats = {
   totalRevenue: number;
 };
 
-export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<
-    "dashboard" | "orders" | "products" | "categories" | "messages"
-  >("dashboard");
+function AdminContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const activeTabParam = searchParams.get("tab") as
+    | "dashboard"
+    | "orders"
+    | "payments"
+    | "products"
+    | "categories"
+    | "messages"
+    | null;
+  const activeTab = activeTabParam || "dashboard";
+
+  const setActiveTab = (tab: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", tab);
+    router.push(`${pathname}?${params.toString()}`);
+  };
   const [orders, setOrders] = useState<Order[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -116,6 +144,10 @@ export default function AdminPage() {
     totalCategories: 0,
     totalRevenue: 0,
   });
+  const [analyticsData, setAnalyticsData] = useState<{
+    chartData: { date: string; revenue: number; orders: number }[];
+    topProducts: { name: string; sales: number }[];
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [newStatus, setNewStatus] = useState("");
@@ -152,10 +184,15 @@ export default function AdminPage() {
 
       let totalRevenue = 0;
       if (res.ok && data.orders) {
-        totalRevenue = data.orders.reduce(
-          (acc: number, order: OrderType) => acc + (order.totalPrice || 0),
-          0,
-        );
+        totalRevenue = data.orders
+          .filter(
+            (o: OrderType) =>
+              o.status !== "pending" && o.status !== "cancelled",
+          )
+          .reduce(
+            (acc: number, order: OrderType) => acc + (order.totalPrice || 0),
+            0,
+          );
       }
 
       const productsRes = await fetch(`/api/products?limit=1000`, {
@@ -168,6 +205,15 @@ export default function AdminPage() {
       });
       const categoriesData = await categoriesRes.json();
 
+      const analyticsRes = await fetch(`/api/admin/analytics`, {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      });
+      if (analyticsRes.ok) {
+        const analyticsResult = await analyticsRes.json();
+        setAnalyticsData(analyticsResult);
+      }
+
       setStats({
         totalOrders: (res.ok ? data.total : 0) || 0,
         totalProducts: productsData.total || productsData.products?.length || 0,
@@ -179,21 +225,48 @@ export default function AdminPage() {
     }
   };
 
+// State for customer filter
+const [selectedCustomer, setSelectedCustomer] = useState<string>("all");
+// List of customers for the dropdown
+const [customers, setCustomers] = useState<any[]>([]);
+
+// Fetch customers (admin only)
+const fetchCustomers = useCallback(async () => {
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`/api/admin/users?role=customer`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setCustomers(data.users || []);
+    } else {
+      console.error("Failed to fetch customers:", data.error || res.statusText);
+    }
+  } catch (err) {
+    console.error("Failed to fetch customers:", err);
+  }
+}, []);
+
   // Fetch orders
-  const fetchOrders = async () => {
+  const fetchOrders =useCallback(
+   async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`/api/admin/orders?limit=100`, {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
+      const res = await fetch(
+        `/api/admin/orders?limit=100&status=${orderStatus}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        },
+      );
       const data = await res.json();
 
       if (res.ok) {
-        // Map userId to user to match the frontend Type
         const mappedOrders = (data.orders || []).map((order: OrderType) => ({
           ...order,
-          user: order.userId,
+          user: order.userId, // expose as `user`
         })) as Order[];
         setOrders(mappedOrders);
       } else {
@@ -202,7 +275,17 @@ export default function AdminPage() {
     } catch (err) {
       console.error("Failed to fetch orders:", err);
     }
-  };
+  },[orderStatus])
+
+  // Load customers on component mount
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  // Fetch orders when filters change
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   // Fetch products
   const fetchProducts = async () => {
@@ -545,8 +628,37 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
+    const verifyAdmin = async () => {
+      const token = localStorage.getItem("token");
+      const role = localStorage.getItem("role");
+
+      if (!token || role !== "admin") {
+        window.location.href = "/auth/signin";
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/users/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.ok) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("role");
+          window.location.href = "/auth/signin";
+          return;
+        }
+
+        // const data = await res.json();
+        // Additional check for role from server if needed
+      } catch (err) {
+        console.error("Admin verification failed:", err);
+      }
+    };
+
     const loadData = async () => {
       setLoading(true);
+      await verifyAdmin();
       await Promise.all([
         fetchStats(),
         fetchOrders(),
@@ -590,7 +702,7 @@ export default function AdminPage() {
             Manage your store, orders, and products.
           </p>
         </div>
-        <div className="flex items-center gap-2 bg-secondary/30 backdrop-blur-md p-1.5 rounded-2xl border border-white/10">
+        <div className="flex items-center gap-2 bg-secondary/30 backdrop-blur-md p-1.5 rounded-2xl border border-white/10 overflow-x-auto no-scrollbar w-full md:w-auto max-w-full whitespace-nowrap">
           <Button
             variant={activeTab === "dashboard" ? "default" : "ghost"}
             onClick={() => setActiveTab("dashboard")}
@@ -604,6 +716,13 @@ export default function AdminPage() {
             className="rounded-xl px-6 transition-all duration-300"
           >
             Orders
+          </Button>
+          <Button
+            variant={activeTab === "payments" ? "default" : "ghost"}
+            onClick={() => setActiveTab("payments")}
+            className="rounded-xl px-6 transition-all duration-300"
+          >
+            Payments
           </Button>
           <Button
             variant={activeTab === "products" ? "default" : "ghost"}
@@ -633,7 +752,10 @@ export default function AdminPage() {
       {activeTab === "dashboard" && (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-[2rem] overflow-hidden group hover:shadow-primary/10 transition-all duration-500">
+            <Card
+              className="glassmorphism dark:glassmorphism-dark border-none rounded-xl overflow-hidden group hover:shadow-primary/10 transition-all duration-500 cursor-pointer"
+              onClick={() => setActiveTab("orders")}
+            >
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs font-bold uppercase tracking-widest opacity-60 flex justify-between items-center">
                   Total Orders
@@ -648,17 +770,14 @@ export default function AdminPage() {
                   <p className="text-4xl font-black text-gradient">
                     {stats.totalOrders}
                   </p>
-                  <span className="text-xs font-medium text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">
-                    +12%
-                  </span>
-                </div>
-                <div className="mt-5 h-1 w-full bg-secondary rounded-full overflow-hidden">
-                  <div className="h-full bg-primary w-[70%] rounded-full" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-[2rem] overflow-hidden group hover:shadow-primary/10 transition-all duration-500">
+            <Card
+              className="glassmorphism dark:glassmorphism-dark border-none rounded-xl overflow-hidden group hover:shadow-primary/10 transition-all duration-500 cursor-pointer"
+              onClick={() => setActiveTab("payments")}
+            >
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs font-bold uppercase tracking-widest opacity-60 flex justify-between items-center">
                   Revenue
@@ -670,17 +789,14 @@ export default function AdminPage() {
                   <p className="text-4xl font-black text-gradient">
                     ${stats.totalRevenue?.toLocaleString()}
                   </p>
-                  <span className="text-xs font-medium text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">
-                    +8%
-                  </span>
-                </div>
-                <div className="mt-5 h-1 w-full bg-secondary rounded-full overflow-hidden">
-                  <div className="h-full bg-primary w-[45%] rounded-full" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-[2rem] overflow-hidden group hover:shadow-primary/10 transition-all duration-500">
+            <Card
+              className="glassmorphism dark:glassmorphism-dark border-none rounded-xl overflow-hidden group hover:shadow-primary/10 transition-all duration-500 cursor-pointer"
+              onClick={() => setActiveTab("products")}
+            >
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs font-bold uppercase tracking-widest opacity-60 flex justify-between items-center">
                   Products
@@ -691,18 +807,18 @@ export default function AdminPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-baseline gap-2">
+                <div className="flex items-baseline gap-2 pb-2">
                   <p className="text-4xl font-black text-gradient">
                     {stats.totalProducts}
                   </p>
                 </div>
-                <div className="mt-5 h-1 w-full bg-secondary rounded-full overflow-hidden">
-                  <div className="h-full bg-primary w-[90%] rounded-full" />
-                </div>
               </CardContent>
             </Card>
 
-            <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-[2rem] overflow-hidden group hover:shadow-primary/10 transition-all duration-500">
+            <Card
+              className="glassmorphism dark:glassmorphism-dark border-none rounded-xl overflow-hidden group hover:shadow-primary/10 transition-all duration-500 cursor-pointer"
+              onClick={() => setActiveTab("categories")}
+            >
               <CardHeader className="pb-2">
                 <CardTitle className="text-xs font-bold uppercase tracking-widest opacity-60 flex justify-between items-center">
                   Categories
@@ -713,20 +829,17 @@ export default function AdminPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="flex items-baseline gap-2">
+                <div className="flex items-baseline gap-2 pb-2">
                   <p className="text-4xl font-black text-gradient">
                     {stats.totalCategories}
                   </p>
-                </div>
-                <div className="mt-5 h-1 w-full bg-secondary rounded-full overflow-hidden">
-                  <div className="h-full bg-primary w-[30%] rounded-full" />
                 </div>
               </CardContent>
             </Card>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-[2.5rem] p-4 shadow-xl">
+            <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-xl p-4 shadow-xl">
               <CardHeader>
                 <CardTitle className="text-2xl font-black flex items-center gap-3">
                   <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center">
@@ -777,38 +890,123 @@ export default function AdminPage() {
               </CardContent>
             </Card>
 
-            <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-[2.5rem] p-4 bg-primary relative overflow-hidden shadow-2xl">
-              {/* Decorative background */}
-              <div className="absolute top-[-20%] right-[-10%] w-64 h-64 bg-white/10 rounded-full blur-3xl" />
+            <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-xl p-4 shadow-2xl relative overflow-hidden group">
+              {/* Decorative background accent */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/20 transition-all duration-700" />
 
-              <CardHeader className="relative z-10">
-                <CardTitle className="text-2xl font-black text-white">
-                  Store Overview
+              <CardHeader>
+                <CardTitle className="text-2xl font-black flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-2xl bg-secondary/50 flex items-center justify-center">
+                    <HugeiconsIcon
+                      icon={PresentationIcon}
+                      className="h-5 w-5 text-primary"
+                    />
+                  </div>
+                  Revenue & Orders (Last 30 Days)
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-8 relative z-10">
-                <div className="bg-white/15 p-8 rounded-[2rem] backdrop-blur-xl border border-white/10">
-                  <p className="text-xs opacity-70 uppercase tracking-widest font-black text-white/80">
-                    Estimated Inventory Value
-                  </p>
-                  <p className="text-5xl font-black mt-2 text-white">
-                    $45,230.00
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-white/10 p-6 rounded-3xl backdrop-blur-md border border-white/5">
-                    <p className="text-xs opacity-70 font-bold text-white/80">
-                      Active Sessions
-                    </p>
-                    <p className="text-3xl font-black text-white">124</p>
+              <CardContent className="space-y-6 relative z-10 p-4">
+                {analyticsData?.chartData ? (
+                  <div className="h-72 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={analyticsData.chartData}
+                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                      >
+                        <defs>
+                          <linearGradient
+                            id="colorRevenue"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="5%"
+                              stopColor="#3b82f6"
+                              stopOpacity={0.3}
+                            />
+                            <stop
+                              offset="95%"
+                              stopColor="#3b82f6"
+                              stopOpacity={0}
+                            />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          vertical={false}
+                          stroke="rgba(255,255,255,0.1)"
+                        />
+                        <XAxis
+                          dataKey="date"
+                          tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 12 }}
+                          tickFormatter={(value) =>
+                            new Date(value).toLocaleDateString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                            })
+                          }
+                          axisLine={false}
+                          tickLine={false}
+                          minTickGap={20}
+                        />
+                        <YAxis
+                          tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 12 }}
+                          axisLine={false}
+                          tickLine={false}
+                          tickFormatter={(value) => `$${value}`}
+                        />
+                        <RechartsTooltip
+                          contentStyle={{
+                            backgroundColor: "rgba(0,0,0,0.8)",
+                            border: "1px solid rgba(255,255,255,0.1)",
+                            borderRadius: "12px",
+                          }}
+                          labelStyle={{
+                            color: "rgba(255,255,255,0.7)",
+                            marginBottom: "4px",
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="revenue"
+                          stroke="#3b82f6"
+                          strokeWidth={3}
+                          fillOpacity={1}
+                          fill="url(#colorRevenue)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
                   </div>
-                  <div className="bg-white/10 p-6 rounded-3xl backdrop-blur-md border border-white/5">
-                    <p className="text-xs opacity-70 font-bold text-white/80">
-                      Conversion Rate
+                ) : (
+                  <div className="h-72 w-full flex items-center justify-center">
+                    <p className="text-muted-foreground animate-pulse">
+                      Loading charts...
                     </p>
-                    <p className="text-3xl font-black text-white">3.2%</p>
                   </div>
-                </div>
+                )}
+
+                {analyticsData?.topProducts && (
+                  <div className="mt-6 pt-6 border-t border-white/10">
+                    <p className="text-[10px] uppercase tracking-widest font-black opacity-50 mb-4">
+                      Top Selling Products
+                    </p>
+                    <div className="space-y-3">
+                      {analyticsData.topProducts.map((p, i) => (
+                        <div
+                          key={i}
+                          className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5"
+                        >
+                          <p className="font-bold text-sm">{p.name}</p>
+                          <p className="text-xs font-black text-primary">
+                            {p.sales} sold
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -817,8 +1015,8 @@ export default function AdminPage() {
 
       {/* Orders Tab */}
       {activeTab === "orders" && (
-        <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-[2.5rem] overflow-hidden shadow-2xl animate-in fade-in duration-700">
-          <CardHeader className="flex flex-row items-center justify-between p-10 border-b border-white/10 bg-white/5">
+        <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-xl overflow-hidden shadow-2xl animate-in fade-in duration-700">
+          <CardHeader className="flex flex-row items-center justify-between p-6 border-b border-white/10 bg-white/5">
             <div>
               <CardTitle className="text-3xl font-black">
                 Order Management
@@ -827,15 +1025,33 @@ export default function AdminPage() {
                 Review and fulfill customer orders.
               </p>
             </div>
-            <Button variant="outline" className="rounded-xl border-white/10">
-              Export Data
-            </Button>
+            <div className="flex items-center gap-4">
+              {/* Order status filter */}
+              <div className="flex items-center">
+                <label className="mr-2 font-medium">Status:</label>
+                <select
+                  value={orderStatus}
+                  onChange={(e) => setOrderStatus(e.target.value)}
+                  className="border rounded-md p-1"
+                >
+                  <option value="all">All</option>
+                  <option value="pending">Pending</option>
+                  <option value="processing">Processing</option>
+                  <option value="shipped">Shipped</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+              {/* <Button variant="outline" className="rounded-xl border-white/10">
+                Export Data
+              </Button> */}
+            </div>
           </CardHeader>
-          <CardContent className="p-0">
-            <Table>
+          <CardContent className="p-0 overflow-x-auto no-scrollbar">
+            <Table className="min-w-[800px] md:min-w-full">
               <TableHeader className="bg-muted/40">
                 <TableRow className="border-white/5 hover:bg-transparent">
-                  <TableHead className="py-8 px-10 font-black uppercase tracking-widest text-[10px] opacity-50">
+                  <TableHead className="py-4 px-6 font-black uppercase tracking-widest text-[10px] opacity-50">
                     ID
                   </TableHead>
                   <TableHead className="font-black uppercase tracking-widest text-[10px] opacity-50">
@@ -861,7 +1077,7 @@ export default function AdminPage() {
                     key={order._id}
                     className="border-white/5 hover:bg-primary/5 transition-all duration-300 group"
                   >
-                    <TableCell className="py-8 px-10 font-mono text-xs opacity-40 group-hover:opacity-100 transition-opacity">
+                    <TableCell className="py-4 px-6 font-mono text-xs opacity-40 group-hover:opacity-100 transition-opacity">
                       #{order._id.slice(-6)}
                     </TableCell>
                     <TableCell>
@@ -892,7 +1108,7 @@ export default function AdminPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="rounded-2xl h-12 w-12 hover:bg-primary hover:text-white hover:rotate-12 transition-all duration-300 shadow-sm"
+                        className="rounded h-9 w-9 hover:bg-primary hover:text-white hover:rotate-12 transition-all duration-300 shadow-sm"
                         onClick={() => {
                           setSelectedOrder(order);
                           setNewStatus(order.status);
@@ -909,13 +1125,115 @@ export default function AdminPage() {
         </Card>
       )}
 
+      {/* Payments Tab */}
+      {activeTab === "payments" && (
+        <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-xl overflow-hidden shadow-2xl animate-in fade-in duration-700">
+          <CardHeader className="flex flex-row items-center justify-between p-6 border-b border-white/10 bg-white/5">
+            <div>
+              <CardTitle className="text-3xl font-black">
+                Payments Received
+              </CardTitle>
+              <p className="text-xs font-medium text-muted-foreground mt-1">
+                Monitor all transaction history and payment statuses.
+              </p>
+            </div>
+            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
+              <HugeiconsIcon
+                icon={CreditCardIcon}
+                className="h-6 w-6 text-primary"
+              />
+            </div>
+          </CardHeader>
+          <CardContent className="p-0 overflow-x-auto no-scrollbar">
+            <Table className="min-w-[800px] md:min-w-full">
+              <TableHeader className="bg-muted/40">
+                <TableRow className="border-white/5 hover:bg-transparent">
+                  <TableHead className="py-4 px-6 font-black uppercase tracking-widest text-[10px] opacity-50">
+                    Transaction ID
+                  </TableHead>
+                  <TableHead className="font-black uppercase tracking-widest text-[10px] opacity-50">
+                    Customer
+                  </TableHead>
+                  <TableHead className="font-black uppercase tracking-widest text-[10px] opacity-50">
+                    Amount
+                  </TableHead>
+                  <TableHead className="font-black uppercase tracking-widest text-[10px] opacity-50">
+                    Date
+                  </TableHead>
+                  <TableHead className="font-black uppercase tracking-widest text-[10px] opacity-50">
+                    Status
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {orders.map((order) => (
+                  <TableRow
+                    key={order._id}
+                    className="border-white/5 hover:bg-primary/5 transition-all duration-300 group"
+                  >
+                    <TableCell className="py-4 px-6 font-mono text-xs opacity-40 group-hover:opacity-100 transition-opacity">
+                      {order.stripeSessionId ? (
+                        <span className="text-green/80 font-bold">
+                          {order.stripeSessionId.slice(-12)}
+                        </span>
+                      ) : (
+                        <span className="opacity-40 italic">N/A</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-bold text-sm">
+                          {order.user?.name || "Deleted User"}
+                        </span>
+                        <span className="text-[10px] opacity-40">
+                          {order.user?.email || ""}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-black text-lg text-gradient">
+                      ${order.totalPrice?.toFixed(2)}
+                    </TableCell>
+                    <TableCell className="text-xs font-medium opacity-60">
+                      {new Date(order.createdAt).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          order.status === "pending"
+                            ? "outline"
+                            : order.status === "cancelled"
+                              ? "destructive"
+                              : "default"
+                        }
+                        className={cn(
+                          "rounded-lg px-3 py-1 font-black uppercase text-[10px] tracking-widest",
+                          order.status === "processing" &&
+                            "bg-green-500/20 text-green-500 border-green-500/20",
+                          order.status === "shipped" &&
+                            "bg-blue-500/20 text-blue-500 border-blue-500/20",
+                          order.status === "delivered" &&
+                            "bg-primary/20 text-primary border-primary/20",
+                        )}
+                      >
+                        {order.status === "processing" ? "PAID" : order.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
       {/* Products Tab */}
       {activeTab === "products" && (
-        <div className="space-y-8 animate-in fade-in duration-700">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-xl overflow-hidden shadow-2xl animate-in fade-in duration-700">
+          <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 border-b border-white/10 bg-white/5 gap-4">
             <div>
-              <h2 className="text-3xl font-black">Product Inventory</h2>
-              <p className="text-muted-foreground">
+              <CardTitle className="text-3xl font-black">
+                Product Inventory
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
                 Manage your product catalog and stock levels.
               </p>
             </div>
@@ -961,7 +1279,7 @@ export default function AdminPage() {
                 >
                   Add Product
                 </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto glassmorphism dark:glassmorphism-dark border-white/10 rounded-[2.5rem] custom-scrollbar">
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto glassmorphism dark:glassmorphism-dark border-white/10 rounded-xl custom-scrollbar shadow-2xl">
                   <DialogHeader>
                     <DialogTitle className="text-2xl font-black">
                       {editingProduct ? "Edit Product" : "Add New Product"}
@@ -982,7 +1300,7 @@ export default function AdminPage() {
                               name: e.target.value,
                             })
                           }
-                          className="h-12 bg-white/50 dark:bg-black/20 rounded-xl"
+                          className="h-9 bg-white/50 dark:bg-black/20 rounded-lg text-xs border-white/10 focus:border-primary/50"
                           placeholder="Premium Watch Series 5"
                         />
                       </div>
@@ -1002,7 +1320,7 @@ export default function AdminPage() {
                               price: e.target.value,
                             })
                           }
-                          className="h-12 bg-white/50 dark:bg-black/20 rounded-xl"
+                          className="h-9 bg-white/50 dark:bg-black/20 rounded-lg text-xs border-white/10 focus:border-primary/50"
                           placeholder="299.99"
                         />
                       </div>
@@ -1023,7 +1341,7 @@ export default function AdminPage() {
                             description: e.target.value,
                           })
                         }
-                        className="min-h-[120px] bg-white/50 dark:bg-black/20 rounded-xl"
+                        className="min-h-[100px] bg-white/50 dark:bg-black/20 rounded-lg text-xs border-white/10 focus:border-primary/50"
                         placeholder="Describe the product features..."
                       />
                     </div>
@@ -1046,7 +1364,7 @@ export default function AdminPage() {
                         >
                           <SelectTrigger
                             id="category"
-                            className="h-12 w-full bg-white/50 dark:bg-black/20 rounded-xl px-4 flex items-center justify-between"
+                            className="h-9 w-full bg-white/50 dark:bg-black/20 rounded px-4 flex items-center justify-between text-xs"
                           >
                             <SelectValue placeholder="Select a category">
                               {
@@ -1085,7 +1403,7 @@ export default function AdminPage() {
                               stock: e.target.value,
                             })
                           }
-                          className="h-12 w-full bg-white/50 dark:bg-black/20 rounded-xl"
+                          className="h-9 w-full bg-white/50 dark:bg-black/20 rounded text-xs"
                           placeholder="100"
                         />
                       </div>
@@ -1107,7 +1425,7 @@ export default function AdminPage() {
                     </div>
                     <Button
                       onClick={handleProductSubmit}
-                      className="h-14 rounded-2xl font-black text-lg shadow-xl shadow-primary/20"
+                      className="h-10 rounded-lg font-black text-sm shadow-xl shadow-primary/20"
                     >
                       {editingProduct ? "Update Product" : "Launch Product"}
                     </Button>
@@ -1115,107 +1433,151 @@ export default function AdminPage() {
                 </DialogContent>
               </Dialog>
             </div>
-          </div>
+          </CardHeader>
 
-          {viewMode === "cards" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {products.map((product) => (
-                <AdminProductCard
-                  key={product._id}
-                  product={product}
-                  onEdit={openEditProduct}
-                  onDelete={deleteProduct}
-                />
-              ))}
-            </div>
-          ) : (
-            <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-[2.5rem] overflow-hidden">
-              <Table>
-                <TableHeader className="bg-muted/40">
-                  <TableRow className="border-white/5">
-                    <TableHead className="py-6 px-8">Image</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Stock</TableHead>
-                    <TableHead>Rating</TableHead>
-                    <TableHead className="text-right px-8">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {products.map((product) => (
-                    <TableRow
-                      key={product._id}
-                      className="border-white/5 hover:bg-white/5"
-                    >
-                      <TableCell className="py-6 px-8">
-                        <Image
-                          src={product.images?.[0] || "/placeholder.png"}
-                          alt={product.name}
-                          className="w-14 h-14 object-cover rounded-2xl border border-white/10"
-                        />
-                      </TableCell>
-                      <TableCell className="font-black text-lg">
-                        {product.name}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant="outline"
-                          className="rounded-lg font-bold border-white/10"
-                        >
-                          {product.categoryId?.name}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-black text-xl text-primary">
-                        ${product.price}
-                      </TableCell>
-                      <TableCell className="font-bold">
-                        {product.stock}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1 font-bold">
-                          ⭐ {product.averageRating?.toFixed(1) || "N/A"}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right px-8">
-                        <div className="flex gap-2 justify-end">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-10 w-10 rounded-xl hover:bg-primary hover:text-white"
-                            onClick={() => openEditProduct(product)}
-                          >
-                            <HugeiconsIcon
-                              icon={Edit01Icon}
-                              className="h-4 w-4"
-                            />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-10 w-10 rounded-xl hover:bg-red-500 hover:text-white"
-                            onClick={() => deleteProduct(product._id)}
-                          >
-                            <HugeiconsIcon icon={Trash} className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
+          <CardContent className={cn("p-0", viewMode === "cards" && "p-8")}>
+            {viewMode === "cards" ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {products.map((product) => (
+                  <AdminProductCard
+                    key={product._id}
+                    product={product}
+                    onEdit={openEditProduct}
+                    onDelete={deleteProduct}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="overflow-x-auto no-scrollbar">
+                <Table className="min-w-[1000px] md:min-w-full">
+                  <TableHeader className="bg-muted/40">
+                    <TableRow className="border-white/5 hover:bg-transparent">
+                      <TableHead className="py-4 px-6 font-black uppercase tracking-widest text-[10px] opacity-50">
+                        Image
+                      </TableHead>
+                      <TableHead className="font-black uppercase tracking-widest text-[10px] opacity-50">
+                        Name
+                      </TableHead>
+                      <TableHead className="font-black uppercase tracking-widest text-[10px] opacity-50">
+                        Category
+                      </TableHead>
+                      <TableHead className="font-black uppercase tracking-widest text-[10px] opacity-50">
+                        Price
+                      </TableHead>
+                      <TableHead className="font-black uppercase tracking-widest text-[10px] opacity-50">
+                        Stock
+                      </TableHead>
+                      <TableHead className="font-black uppercase tracking-widest text-[10px] opacity-50 text-right px-10">
+                        Actions
+                      </TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          )}
-        </div>
+                  </TableHeader>
+                  <TableBody>
+                    {products.map((product) => (
+                      <TableRow
+                        key={product._id}
+                        className="border-white/5 hover:bg-primary/5 transition-all duration-300 group"
+                      >
+                        <TableCell className="py-4 px-6">
+                          <Image
+                            src={product.images?.[0] || "/placeholder.png"}
+                            alt={product.name}
+                            className="w-12 h-12 object-cover rounded-xl border border-white/10 group-hover:scale-110 transition-transform"
+                            width={48}
+                            height={48}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-bold text-lg leading-tight">
+                            {product.name}
+                          </div>
+                          <div className="text-[10px] opacity-40 font-mono">
+                            ID: {product._id.slice(-6)}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="outline"
+                            className="rounded-lg bg-secondary/30 border-white/5 font-bold uppercase text-[10px] tracking-wider px-2 py-0.5"
+                          >
+                            {categories.find(
+                              (c) =>
+                                String(c._id) === String(product.categoryId),
+                            )?.name || "Uncategorized"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-black text-xl text-primary">
+                          ${product.price.toFixed(2)}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1.5">
+                            <span
+                              className={cn(
+                                "text-[10px] font-black uppercase tracking-widest",
+                                product.stock < 10
+                                  ? "text-red-500"
+                                  : "text-green-500",
+                              )}
+                            >
+                              {product.stock} Units
+                            </span>
+                            <div className="h-1 w-24 bg-secondary rounded-full overflow-hidden">
+                              <div
+                                className={cn(
+                                  "h-full rounded-full transition-all duration-1000",
+                                  product.stock < 10
+                                    ? "bg-red-500"
+                                    : "bg-primary",
+                                )}
+                                style={{
+                                  width: `${Math.min((product.stock / 100) * 100, 100)}%`,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right px-10">
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 rounded-lg hover:bg-primary/10 hover:text-primary transition-all hover:rotate-12"
+                              onClick={() => openEditProduct(product)}
+                            >
+                              <HugeiconsIcon
+                                icon={Edit01Icon}
+                                className="h-4 w-4"
+                              />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 rounded-lg hover:bg-red-500/10 hover:text-red-500 transition-all hover:-rotate-12"
+                              onClick={() => deleteProduct(product._id)}
+                            >
+                              <HugeiconsIcon icon={Trash} className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Categories Tab */}
       {activeTab === "categories" && (
-        <div className="space-y-8 animate-in fade-in duration-700">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-xl overflow-hidden shadow-2xl animate-in fade-in duration-700">
+          <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center p-6 border-b border-white/10 bg-white/5 gap-4">
             <div>
-              <h2 className="text-3xl font-black">Market Segments</h2>
-              <p className="text-muted-foreground">
+              <CardTitle className="text-3xl font-black">
+                Market Segments
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
                 Categorize your products for better discovery.
               </p>
             </div>
@@ -1254,7 +1616,7 @@ export default function AdminPage() {
                 >
                   Add Category
                 </DialogTrigger>
-                <DialogContent className="max-h-[90vh] overflow-y-auto glassmorphism dark:glassmorphism-dark border-white/10 rounded-[2.5rem] custom-scrollbar">
+                <DialogContent className="max-h-[90vh] overflow-y-auto glassmorphism dark:glassmorphism-dark border-white/10 rounded-xl custom-scrollbar shadow-2xl">
                   <DialogHeader>
                     <DialogTitle className="text-2xl font-black">
                       {editingCategory ? "Edit Category" : "Add New Category"}
@@ -1274,7 +1636,7 @@ export default function AdminPage() {
                             name: e.target.value,
                           })
                         }
-                        className="h-12 bg-white/50 dark:bg-black/20 rounded-xl"
+                        className="h-10 bg-white/50 dark:bg-black/20 rounded-lg text-sm border-white/10 focus:border-primary/50"
                         placeholder="Electronics, Fashion, etc."
                       />
                     </div>
@@ -1291,7 +1653,7 @@ export default function AdminPage() {
                             description: e.target.value,
                           })
                         }
-                        className="min-h-[100px] bg-white/50 dark:bg-black/20 rounded-xl"
+                        className="min-h-[80px] bg-white/50 dark:bg-black/20 rounded-lg text-xs border-white/10 focus:border-primary/50"
                         placeholder="What defines this category?"
                       />
                     </div>
@@ -1308,7 +1670,7 @@ export default function AdminPage() {
                     </div>
                     <Button
                       onClick={handleCategorySubmit}
-                      className="h-14 rounded-2xl font-black text-lg shadow-xl shadow-primary/20"
+                      className="h-10 rounded-lg font-black text-sm shadow-xl shadow-primary/20"
                     >
                       {editingCategory
                         ? "Update Category"
@@ -1318,99 +1680,40 @@ export default function AdminPage() {
                 </DialogContent>
               </Dialog>
             </div>
-          </div>
+          </CardHeader>
 
-          {viewMode === "cards" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {categories.map((category) => (
-                <Card
-                  key={category._id}
-                  className="glassmorphism dark:glassmorphism-dark border-none rounded-[2rem] overflow-hidden group hover:shadow-2xl transition-all duration-500"
-                >
-                  <div className="aspect-video relative bg-muted overflow-hidden">
-                    <Image
-                      src={category.images?.[0] || "/placeholder.png"}
-                      alt={category.name}
-                      className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-700"
-                    />
-                    <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                      <h3 className="text-2xl font-black text-white tracking-tight px-4 text-center">
-                        {category.name}
-                      </h3>
-                    </div>
-                  </div>
-                  <CardContent className="p-6">
-                    <p className="text-sm text-muted-foreground line-clamp-2 font-medium">
-                      {category.description}
-                    </p>
-                    <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/5">
-                      <span className="font-black text-primary uppercase text-[10px] tracking-widest">
-                        {category.productsCount || 0} Products Linked
-                      </span>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="secondary"
-                          size="icon"
-                          className="h-10 w-10 rounded-xl hover:bg-primary hover:text-white"
-                          onClick={() => openEditCategory(category)}
-                        >
-                          <HugeiconsIcon
-                            icon={Edit01Icon}
-                            className="h-4 w-4"
-                          />
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="h-10 w-10 rounded-xl"
-                          onClick={() => deleteCategory(category._id)}
-                        >
-                          <HugeiconsIcon icon={Trash} className="h-4 w-4" />
-                        </Button>
+          <CardContent className={cn("p-0", viewMode === "cards" && "p-8")}>
+            {viewMode === "cards" ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {categories.map((category) => (
+                  <Card
+                    key={category._id}
+                    className="glassmorphism dark:glassmorphism-dark border-none rounded-xl overflow-hidden group hover:shadow-2xl transition-all duration-500"
+                  >
+                    <div className="aspect-video relative bg-muted overflow-hidden">
+                      <Image
+                        src={category.images?.[0] || "/placeholder.png"}
+                        alt={category.name}
+                        className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-700"
+                        fill
+                      />
+                      <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                        <h3 className="text-2xl font-black text-white tracking-tight px-4 text-center">
+                          {category.name}
+                        </h3>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-[2.5rem] overflow-hidden">
-              <Table>
-                <TableHeader className="bg-muted/40">
-                  <TableRow className="border-white/5">
-                    <TableHead className="py-6 px-8">Image</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Products</TableHead>
-                    <TableHead className="text-right px-8">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {categories.map((category) => (
-                    <TableRow
-                      key={category._id}
-                      className="border-white/5 hover:bg-white/5"
-                    >
-                      <TableCell className="py-6 px-8">
-                        <Image
-                          src={category.images?.[0] || "/placeholder.png"}
-                          alt={category.name}
-                          className="w-20 h-12 object-cover rounded-xl border border-white/10"
-                        />
-                      </TableCell>
-                      <TableCell className="font-black text-xl">
-                        {category.name}
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate text-muted-foreground font-medium">
+                    <CardContent className="p-6">
+                      <p className="text-sm text-muted-foreground line-clamp-2 font-medium">
                         {category.description}
-                      </TableCell>
-                      <TableCell className="font-black text-primary">
-                        {category.productsCount || 0}
-                      </TableCell>
-                      <TableCell className="text-right px-8">
-                        <div className="flex gap-2 justify-end">
+                      </p>
+                      <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/5">
+                        <span className="font-black text-primary uppercase text-[10px] tracking-widest">
+                          {category.productsCount || 0} Products Linked
+                        </span>
+                        <div className="flex gap-2">
                           <Button
-                            variant="ghost"
+                            variant="secondary"
                             size="icon"
                             className="h-10 w-10 rounded-xl hover:bg-primary hover:text-white"
                             onClick={() => openEditCategory(category)}
@@ -1421,46 +1724,130 @@ export default function AdminPage() {
                             />
                           </Button>
                           <Button
-                            variant="ghost"
+                            variant="destructive"
                             size="icon"
-                            className="h-10 w-10 rounded-xl hover:bg-red-500 hover:text-white"
+                            className="h-10 w-10 rounded-xl"
                             onClick={() => deleteCategory(category._id)}
                           >
                             <HugeiconsIcon icon={Trash} className="h-4 w-4" />
                           </Button>
                         </div>
-                      </TableCell>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="overflow-x-auto no-scrollbar">
+                <Table className="min-w-[800px] md:min-w-full">
+                  <TableHeader className="bg-muted/40">
+                    <TableRow className="border-white/5 hover:bg-transparent">
+                      <TableHead className="py-4 px-6 font-black uppercase tracking-widest text-[10px] opacity-50">
+                        Visual
+                      </TableHead>
+                      <TableHead className="font-black uppercase tracking-widest text-[10px] opacity-50">
+                        Category Name
+                      </TableHead>
+                      <TableHead className="font-black uppercase tracking-widest text-[10px] opacity-50">
+                        Description
+                      </TableHead>
+                      <TableHead className="font-black uppercase tracking-widest text-[10px] opacity-50">
+                        Inventory
+                      </TableHead>
+                      <TableHead className="text-right px-10 font-black uppercase tracking-widest text-[10px] opacity-50">
+                        Actions
+                      </TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </Card>
-          )}
-        </div>
+                  </TableHeader>
+                  <TableBody>
+                    {categories.map((category) => (
+                      <TableRow
+                        key={category._id}
+                        className="border-white/5 hover:bg-primary/5 transition-all duration-300 group"
+                      >
+                        <TableCell className="py-4 px-6">
+                          <Image
+                            src={category.images?.[0] || "/placeholder.png"}
+                            alt={category.name}
+                            className="w-16 h-10 object-cover rounded-lg border border-white/10 group-hover:scale-110 transition-transform"
+                            width={64}
+                            height={40}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-bold text-lg leading-tight">
+                            {category.name}
+                          </div>
+                          <div className="text-[10px] opacity-40 font-mono italic">
+                            Sector Identified
+                          </div>
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate text-sm font-medium text-muted-foreground">
+                          {category.description}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-primary" />
+                            <span className="font-black">
+                              {category.productsCount || 0} Items
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right px-10">
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 rounded-lg hover:bg-primary/10 hover:text-primary transition-all hover:rotate-12"
+                              onClick={() => openEditCategory(category)}
+                            >
+                              <HugeiconsIcon
+                                icon={Edit01Icon}
+                                className="h-4 w-4"
+                              />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 rounded-lg hover:bg-red-500/10 hover:text-red-500 transition-all hover:-rotate-12"
+                              onClick={() => deleteCategory(category._id)}
+                            >
+                              <HugeiconsIcon icon={Trash} className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {/* Messages Tab */}
       {activeTab === "messages" && (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-          <div className="flex justify-between items-center">
+        <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-xl overflow-hidden shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-700">
+          <CardHeader className="flex flex-row justify-between items-center p-6 border-b border-white/10 bg-white/5">
             <div>
-              <h2 className="text-3xl font-black tracking-tight">
+              <CardTitle className="text-3xl font-black tracking-tight">
                 Customer Inquiries
-              </h2>
-              <p className="text-muted-foreground font-medium">
+              </CardTitle>
+              <p className="text-sm text-muted-foreground font-medium mt-1">
                 Manage messages from the contact page
               </p>
             </div>
             <Badge
               variant="outline"
-              className="rounded-full px-4 py-1 font-bold"
+              className="rounded-full px-4 py-1 font-bold bg-primary/10 border-primary/20 text-primary uppercase text-[10px] tracking-widest"
             >
               {messages.filter((m) => !m.read).length} Unread
             </Badge>
-          </div>
+          </CardHeader>
 
-          <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-[2.5rem] overflow-hidden">
-            <Table>
+          <CardContent className="p-0 overflow-x-auto no-scrollbar">
+            <Table className="min-w-[800px] md:min-w-full">
               <TableHeader className="bg-muted/40">
                 <TableRow className="border-white/5">
                   <TableHead className="py-6 px-8">Status</TableHead>
@@ -1532,14 +1919,14 @@ export default function AdminPage() {
                                 className="h-4 w-4"
                               />
                             </DialogTrigger>
-                            <DialogContent className="rounded-[2rem] glassmorphism dark:glassmorphism-dark border-none max-w-2xl">
+                            <DialogContent className="rounded-xl glassmorphism dark:glassmorphism-dark border-none max-w-2xl">
                               <DialogHeader>
                                 <DialogTitle className="text-2xl font-black">
                                   Message from {msg.name}
                                 </DialogTitle>
                               </DialogHeader>
                               <div className="space-y-6 py-6">
-                                <div className="grid grid-cols-2 gap-4 bg-white/5 p-4 rounded-2xl">
+                                <div className="grid grid-cols-2 gap-4 bg-white/5 p-4 rounded-xl">
                                   <div>
                                     <p className="text-[10px] uppercase font-black opacity-50">
                                       Email
@@ -1568,7 +1955,7 @@ export default function AdminPage() {
                                   <p className="text-[10px] uppercase font-black opacity-50 mb-2">
                                     Message Content
                                   </p>
-                                  <div className="bg-white/5 p-6 rounded-2xl leading-relaxed whitespace-pre-wrap">
+                                  <div className="bg-white/5 p-6 rounded-xl leading-relaxed whitespace-pre-wrap">
                                     {msg.message}
                                   </div>
                                 </div>
@@ -1610,17 +1997,19 @@ export default function AdminPage() {
                 )}
               </TableBody>
             </Table>
-          </Card>
-        </div>
+          </CardContent>
+        </Card>
       )}
       {/* Order Details Dialog */}
       <Dialog
         open={!!selectedOrder}
         onOpenChange={() => setSelectedOrder(null)}
       >
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar glassmorphism dark:glassmorphism-dark border-white/10 rounded-xl shadow-2xl">
           <DialogHeader>
-            <DialogTitle>Order Details</DialogTitle>
+            <DialogTitle className="text-2xl font-black">
+              Order Details
+            </DialogTitle>
           </DialogHeader>
           {selectedOrder && (
             <div className="grid gap-4 py-4">
@@ -1692,7 +2081,7 @@ export default function AdminPage() {
                     id="status"
                     value={newStatus}
                     onChange={(e) => setNewStatus(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex h-10 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 transition-all"
                   >
                     <option value="pending">Pending</option>
                     <option value="processing">Processing</option>
@@ -1701,6 +2090,7 @@ export default function AdminPage() {
                     <option value="cancelled">Cancelled</option>
                   </select>
                   <Button
+                    className="rounded-lg px-6 h-10 font-bold text-xs"
                     onClick={() =>
                       updateOrderStatus(selectedOrder._id, newStatus)
                     }
@@ -1714,5 +2104,19 @@ export default function AdminPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-10 text-center font-bold text-muted-foreground animate-pulse">
+          Loading Admin Portal...
+        </div>
+      }
+    >
+      <AdminContent />
+    </Suspense>
   );
 }

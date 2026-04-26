@@ -3,6 +3,9 @@ import { User } from "@/models/user";
 import { signUpSchema } from "@/schemas/user";
 import { NextRequest, NextResponse } from "next/server";
 import z from "zod";
+import { generateOtp } from "@/lib/generateOtp";
+import { resend } from "@/lib/resend";
+import EmailTemplate from "@/components/email-template";
 
 export const POST = async (req: NextRequest): Promise<NextResponse> => {
   try {
@@ -22,12 +25,29 @@ export const POST = async (req: NextRequest): Promise<NextResponse> => {
       );
     }
 
+    const otp = generateOtp();
+    const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
     const user = await User.create({
       name: data.name,
       email: data.email,
       password: data.password,
+      otp,
+      otpExpiresAt,
       isAdmin: false,
       isVerified: false,
+    });
+
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM!,
+      to: data.email,
+      subject: "Verify your email",
+      react: EmailTemplate({
+        otp,
+        name: data.name,
+        subject: "Verify your email",
+        type: "verification",
+      }),
     });
 
     return NextResponse.json(

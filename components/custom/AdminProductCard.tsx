@@ -61,7 +61,9 @@ export function AdminProductCard({
             key={index}
             src={img}
             alt={`${product.name} - ${index + 1}`}
-            className={`absolute inset-0 object-cover w-full h-full group-hover:scale-110 transition-all duration-700 ${
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className={`object-cover group-hover:scale-110 transition-all duration-700 ${
               index === currentImageIndex ? "opacity-100" : "opacity-0"
             }`}
           />

@@ -76,7 +76,7 @@ export default function ProductCard({ product }: Props) {
   };
 
   return (
-    <Card className="overflow-hidden border-white/10 dark:bg-white/5 backdrop-blur-sm hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 group rounded-2xl">
+    <Card className="overflow-hidden border-white/10 dark:bg-white/5 backdrop-blur-sm hover:shadow-xl hover:shadow-primary/10 transition-all duration-500 group rounded-lg">
       <div className="relative h-64 w-full overflow-hidden">
         {images.map((img, index) => (
           <div
@@ -129,7 +129,7 @@ export default function ProductCard({ product }: Props) {
       <CardContent className="p-6">
         <Link href={`/products/${product._id}`}>
           <div className="flex justify-between items-start gap-2">
-            <h4 className="font-bold text-lg leading-tight group-hover:text-primary transition-colors duration-300">
+            <h4 className="font-bold text-base leading-tight group-hover:text-primary transition-colors duration-300 line-clamp-1">
               {product.name}
             </h4>
             <div className="flex items-center gap-1 bg-yellow-400/10 px-2 py-0.5 rounded-lg">
@@ -145,13 +145,13 @@ export default function ProductCard({ product }: Props) {
         </Link>
 
         <div className="mt-6 flex justify-between items-center">
-          <span className="text-2xl font-black text-gradient">
+          <span className="text-xl font-black text-gradient">
             ${product.price?.toFixed(2)}
           </span>
 
           <Button
             size="sm"
-            className={`rounded-xl px-5 transition-all duration-300 gap-2 ${
+            className={`rounded px-4 h-7 text-[10px] transition-all duration-300 gap-1.5 ${
               added
                 ? "bg-green-500 hover:bg-green-600 scale-105"
                 : "hover:scale-105"

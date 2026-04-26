@@ -67,12 +67,12 @@ export default function Page() {
               Fresh Arrivals for Spring 2026
             </div>
             
-            <h1 className="text-6xl md:text-7xl font-black leading-[1.1] tracking-tight text-gray-900 dark:text-white">
+            <h1 className="text-4xl md:text-5xl font-black leading-[1.2] tracking-tight text-gray-900 dark:text-white">
               Elevate Your <br />
               <span className="text-gradient">Everyday Style</span>
             </h1>
 
-            <p className="text-xl text-muted-foreground max-w-lg leading-relaxed">
+            <p className="text-base text-muted-foreground max-w-lg leading-relaxed line-clamp-2">
               Curating the finest selection of premium essentials. Experience the perfect blend of luxury, comfort, and innovation.
             </p>
 
@@ -81,7 +81,7 @@ export default function Page() {
                 <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
                 <Input
                   placeholder="Search your favorites..."
-                  className="relative h-16 pl-14 bg-white/50 dark:bg-black/20 backdrop-blur-xl border-white/20 dark:border-white/10 rounded-2xl shadow-2xl transition-all duration-300 text-lg"
+                  className="relative h-11 pl-12 bg-white/50 dark:bg-black/20 backdrop-blur-xl border-white/20 dark:border-white/10 rounded-lg shadow-xl transition-all duration-300 text-sm"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyPress={(e) => e.key === "Enter" && handleSearch()}
@@ -93,7 +93,7 @@ export default function Page() {
               </div>
               <Button 
                 size="lg" 
-                className="h-16 px-10 rounded-2xl shadow-2xl bg-primary hover:bg-primary/90 hover:scale-[1.03] active:scale-95 transition-all duration-300 font-bold text-lg"
+                className="h-11 px-6 rounded-lg shadow-xl bg-primary hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all duration-300 font-bold text-sm"
                 onClick={handleSearch}
               >
                 Start Exploring
@@ -125,7 +125,7 @@ export default function Page() {
               <div className="absolute bottom-8 left-8 right-8 glassmorphism dark:glassmorphism-dark p-6 rounded-2xl translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-500">
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="text-sm font-medium opacity-70">Premium Series</p>
+                    <p className="text-sm font-medium opacity-90">Premium Series</p>
                     <p className="text-xl font-bold tracking-tight">Essential Minimalism</p>
                   </div>
                   <Button size="icon" className="rounded-full h-12 w-12">
@@ -142,10 +142,10 @@ export default function Page() {
       </section>
 
       <section className="mx-auto max-w-7xl px-6 py-24">
-        <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-12">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-12">
           <div className="space-y-2">
-            <h3 className="text-4xl font-bold tracking-tight">Shop by Category</h3>
-            <p className="text-muted-foreground">Find exactly what you&apos;re looking for</p>
+            <h3 className="text-2xl font-bold tracking-tight">Shop by Category</h3>
+            <p className="text-sm text-muted-foreground">Find exactly what you&apos;re looking for</p>
           </div>
           <Link href="/categories">
             <Button variant="ghost" className="group text-primary hover:text-primary">
@@ -173,7 +173,7 @@ export default function Page() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent group-hover:from-primary/80 transition-colors duration-500" />
 
                     <CardContent className="relative z-10 flex flex-col justify-end h-full p-6 text-white">
-                      <p className="text-xs uppercase tracking-widest opacity-70 mb-1">Explore</p>
+                      <p className="text-xs uppercase tracking-widest opacity-90 mb-1">Explore</p>
                       <h4 className="text-xl font-bold tracking-tight">{cat.name}</h4>
                     </CardContent>
                   </Card>
@@ -185,10 +185,10 @@ export default function Page() {
       {/* PRODUCTS */}
       <section className="bg-muted/30 py-24">
         <div className="mx-auto max-w-7xl px-6">
-          <div className="flex flex-col md:flex-row justify-between items-end gap-4 mb-12">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-12">
             <div className="space-y-2">
-              <h3 className="text-4xl font-bold tracking-tight">Featured Products</h3>
-              <p className="text-muted-foreground">Handpicked selections for you</p>
+              <h3 className="text-2xl font-bold tracking-tight">Featured Products</h3>
+              <p className="text-sm text-muted-foreground">Handpicked selections for you</p>
             </div>
             <div className="flex items-center gap-4">
               <Link href="/products">

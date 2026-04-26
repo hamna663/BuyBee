@@ -1,5 +1,6 @@
 import { connectToDatabase } from "@/config/db";
 import { Order } from "@/models/order";
+import { Product } from "@/models/products";
 import { stripe } from "@/lib/stripe";
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
@@ -52,9 +53,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
         console.error(`Order ${orderId} not found for webhook update`);
       } else {
         console.log(`Order ${orderId} updated to processing via webhook`);
+        
+        // Deduct stock for each item in the order
+        for (const item of updated.items) {
+          try {
+            await Product.findByIdAndUpdate(
+              item.productId,
+              { $inc: { stock: -item.quantity } }
+            );
+            console.log(`Decremented stock for product ${item.productId} by ${item.quantity}`);
+          } catch (err) {
+            console.error(`Failed to update stock for product ${item.productId}:`, err);
+          }
+        }
       }
     } catch (err) {
-      console.error("Failed to update order status:", err);
+      console.error("Failed to process completed order:", err);
     }
   }
 

@@ -25,6 +25,7 @@ import {
   Menu01Icon,
   Logout01Icon,
   Settings01Icon,
+  ArrowLeft01Icon,
 } from "@hugeicons/core-free-icons";
 import { CartSheet } from "./CartSheet";
 
@@ -63,17 +64,36 @@ export function Navbar() {
     const loginStatus = async () => {
       const token = localStorage.getItem("token");
       const userRole = localStorage.getItem("role");
+
       if (token) {
-        setIsLoggedIn(true);
-        fetchCartCount();
+        // Verify token with backend
+        try {
+          const res = await fetch("/api/users/me", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (res.ok) {
+            setIsLoggedIn(true);
+            fetchCartCount();
+          } else if (res.status === 401 || res.status === 404) {
+            // Token invalid or user deleted
+            localStorage.removeItem("token");
+            localStorage.removeItem("role");
+            setIsLoggedIn(false);
+            setIsAdmin(false);
+          }
+        } catch (error) {
+          console.error("Auth verification failed:", error);
+          // Don't log out yet, maybe it's just a network error
+        }
       } else {
         setIsLoggedIn(false);
         setIsAdmin(false);
       }
       
-      if (userRole === "admin") {
+      if (userRole === "admin" && token) {
         setIsAdmin(true);
-      } else {
+      } else if (!token) {
         setIsAdmin(false);
       }
     };
@@ -106,18 +126,31 @@ export function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 w-full glassmorphism dark:glassmorphism-dark border-b border-white/10">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-        {/* LOGO */}
-        <Link href="/" className="flex items-center text-primary font-semibold">
-          <Image
-            src="/logo.png"
-            alt="BuyBee Logo"
-            width={32}
-            height={32}
-            className="mr-2"
-          />
-          BuyBee
-        </Link>
+      <div className="mx-auto flex h-14 max-w-7xl items-center justify-between px-6">
+        {/* LEFT SECTION: BACK BUTTON & LOGO */}
+        <div className="flex items-center">
+          {pathname !== "/" && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.back()}
+              className="mr-2 h-8 w-8 rounded-full hover:bg-primary/10 hover:text-primary transition-colors flex-shrink-0"
+              title="Go Back"
+            >
+              <HugeiconsIcon icon={ArrowLeft01Icon} className="h-4 w-4" />
+            </Button>
+          )}
+          <Link href="/" className="flex items-center text-primary font-semibold text-sm">
+            <Image
+              src="/logo.png"
+              alt="BuyBee Logo"
+              width={28}
+              height={28}
+              className="mr-2"
+            />
+            BuyBee
+          </Link>
+        </div>
 
         {/* DESKTOP NAV */}
         <div className="hidden md:flex items-center gap-8 relative">
@@ -129,7 +162,7 @@ export function Navbar() {
             >
               <span
                 className={cn(
-                  "transition-colors",
+                  "transition-colors truncate max-w-[100px]",
                   isActive(link.href)
                     ? "text-primary"
                     : "text-foreground hover:text-primary",
@@ -185,7 +218,11 @@ export function Navbar() {
               {/* CART */}
               <CartSheet
                 trigger={
-                  <div className="relative h-9 w-9 flex items-center justify-center rounded-full hover:bg-secondary/60 transition-colors cursor-pointer">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="relative rounded-full hover:bg-secondary/60 transition-colors"
+                  >
                     <HugeiconsIcon
                       icon={ShoppingCartIcon}
                       className="h-5 w-5"
@@ -196,7 +233,7 @@ export function Navbar() {
                         {cartCount}
                       </span>
                     )}
-                  </div>
+                  </Button>
                 }
               />
 
@@ -207,7 +244,7 @@ export function Navbar() {
                     <HugeiconsIcon icon={UserIcon} className="h-4 w-4" />
                   </span>
 
-                  <span className="text-sm font-medium leading-none">
+                  <span className="text-xs font-medium leading-none truncate max-w-[80px]">
                     Account
                   </span>
                 </DropdownMenuTrigger>
@@ -280,6 +317,20 @@ export function Navbar() {
                       {link.label}
                     </Link>
                   ))}
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      className={cn(
+                        "text-sm font-black uppercase tracking-widest flex items-center gap-2",
+                        isActive("/admin")
+                          ? "text-primary"
+                          : "text-foreground hover:text-primary",
+                      )}
+                    >
+                      <HugeiconsIcon icon={Settings01Icon} className="h-4 w-4" />
+                      Admin Panel
+                    </Link>
+                  )}
                 </div>
 
                 {/* AUTH */}
@@ -312,13 +363,16 @@ export function Navbar() {
                     <>
                       <CartSheet
                         trigger={
-                          <div className="flex h-10 w-full items-center justify-start gap-2 px-4 py-2 text-sm font-medium rounded-md hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer">
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-start gap-2"
+                          >
                             <HugeiconsIcon
                               icon={ShoppingCartIcon}
                               className="h-4 w-4"
                             />
                             Cart ({cartCount})
-                          </div>
+                          </Button>
                         }
                       />
                       <Link href="/profile">

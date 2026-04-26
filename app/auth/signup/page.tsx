@@ -32,12 +32,12 @@ export default function SignUpPage() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, confirmPassword }),
       });
       const data = await res.json();
       if (res.ok) {
         toast.success("Account created! Please verify your email.");
-        setTimeout(() => router.push("/auth/signin"), 1000);
+        setTimeout(() => router.push(`/auth/verify?email=${email}`), 1000);
       } else {
         toast.error(data.message || "Sign up failed");
       }
@@ -60,18 +60,18 @@ export default function SignUpPage() {
           <p className="text-muted-foreground text-sm">Create your free account</p>
         </div>
 
-        <div className="glassmorphism dark:glassmorphism-dark rounded-3xl p-8 space-y-6">
+        <div className="glassmorphism dark:glassmorphism-dark rounded-xl p-6 space-y-5">
           <div className="text-center space-y-1">
-            <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mx-auto mb-4">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary mx-auto mb-3">
               <HugeiconsIcon icon={UserAdd02Icon} className="h-6 w-6" />
             </div>
-            <h1 className="text-2xl font-black tracking-tight">Join BuyBee</h1>
-            <p className="text-muted-foreground text-sm">Fill in your details to get started</p>
+            <h1 className="text-xl font-black tracking-tight">Join BuyBee</h1>
+            <p className="text-muted-foreground text-xs">Fill in your details to get started</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name" className="text-xs uppercase tracking-widest font-bold opacity-70">Full Name</Label>
+              <Label htmlFor="name" className="text-[10px] uppercase tracking-widest font-black text-gray-700 dark:text-gray-300 ml-1">Full Name</Label>
               <Input
                 id="name"
                 type="text"
@@ -79,12 +79,12 @@ export default function SignUpPage() {
                 onChange={(e) => setName(e.target.value)}
                 required
                 placeholder="John Doe"
-                className="h-12 bg-white/50 dark:bg-black/20 border-white/20 rounded-xl"
+                className="h-9 rounded bg-secondary/30 border-white/5 focus:border-primary/50 text-xs"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-xs uppercase tracking-widest font-bold opacity-70">Email Address</Label>
+              <Label htmlFor="email" className="text-[10px] uppercase tracking-widest font-black text-gray-700 dark:text-gray-300 ml-1">Email Address</Label>
               <Input
                 id="email"
                 type="email"
@@ -92,12 +92,12 @@ export default function SignUpPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="you@example.com"
-                className="h-12 bg-white/50 dark:bg-black/20 border-white/20 rounded-xl"
+                className="h-9 rounded bg-secondary/30 border-white/5 focus:border-primary/50 text-xs"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-xs uppercase tracking-widest font-bold opacity-70">Password</Label>
+              <Label htmlFor="password" className="text-[10px] uppercase tracking-widest font-black text-gray-700 dark:text-gray-300 ml-1">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -106,7 +106,7 @@ export default function SignUpPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder="Min 8 characters"
-                  className="h-12 bg-white/50 dark:bg-black/20 border-white/20 rounded-xl pr-12"
+                  className="h-9 rounded bg-secondary/30 border-white/5 focus:border-primary/50 pr-12 text-xs"
                 />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
@@ -116,7 +116,7 @@ export default function SignUpPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-xs uppercase tracking-widest font-bold opacity-70">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-[10px] uppercase tracking-widest font-black text-gray-700 dark:text-gray-300 ml-1">Confirm Password</Label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
@@ -125,7 +125,7 @@ export default function SignUpPage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   placeholder="Repeat password"
-                  className="h-12 bg-white/50 dark:bg-black/20 border-white/20 rounded-xl pr-12"
+                  className="h-9 rounded bg-secondary/30 border-white/5 focus:border-primary/50 pr-12 text-xs"
                 />
                 <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
@@ -134,11 +134,11 @@ export default function SignUpPage() {
               </div>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full h-12 rounded-xl shadow-lg hover:shadow-primary/20 font-bold text-base transition-all hover:scale-[1.01] mt-2"
-              disabled={loading}
-            >
+              <Button
+                type="submit"
+                className="w-full h-9 rounded shadow-lg hover:shadow-primary/20 font-bold text-xs transition-all hover:scale-[1.01] mt-2"
+                disabled={loading}
+              >
               {loading ? (
                 <span className="flex items-center gap-2">
                   <span className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />

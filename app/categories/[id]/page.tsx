@@ -44,26 +44,31 @@ export default async function CategoryPage({
 
   if (!category) {
     return (
-      <main className="min-h-screen bg-background text-foreground">
-        <div className="container mx-auto py-10 px-4">
-          <p>Category not found.</p>
+      <main className="min-h-screen mesh-gradient dark:mesh-gradient-dark pt-24">
+        <div className="container mx-auto px-4">
+          <p className="text-muted-foreground">Category not found.</p>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <div className="container mx-auto py-10 px-4">
-        <h1 className="text-3xl font-bold text-primary mb-8">
-          {category.name}
-        </h1>
+    <main className="min-h-screen mesh-gradient dark:mesh-gradient-dark pt-24 pb-12 px-4">
+      <div className="container mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
+        <div className="space-y-2 border-b border-white/10 pb-8">
+          <h1 className="text-4xl font-black tracking-tight text-gradient">
+            {category.name}
+          </h1>
+          <p className="text-muted-foreground font-medium text-sm">
+            Discover all items in the {category.name} collection.
+          </p>
+        </div>
 
         {products.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-10">
-              <p className="text-muted-foreground">
-                No products in this category.
+          <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-xl p-12 text-center">
+            <CardContent>
+              <p className="text-muted-foreground font-bold italic">
+                No products found in this category yet.
               </p>
             </CardContent>
           </Card>

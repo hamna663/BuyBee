@@ -291,7 +291,7 @@ export default function ProductDetails({
                         </div>
                       </div>
                       <p className="text-muted-foreground font-medium italic leading-relaxed">&quot;{review.comment}&quot;</p>
-                      <p className="text-[10px] font-bold uppercase opacity-30">{new Date(review.createdAt).toLocaleDateString()}</p>
+                      <p className="text-[10px] font-bold uppercase opacity-30">{new Date(review.createdAt).toISOString().split('T')[0]}</p>
                     </CardContent>
                   </Card>
                 ))}

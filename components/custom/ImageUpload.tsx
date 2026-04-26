@@ -134,6 +134,8 @@ export function ImageUpload({ value, onChange, multiple = false }: ImageUploadPr
                   <Image
                     src={url.trim()}
                     alt={`Upload ${index + 1}`}
+                    width={80}
+                    height={80}
                     className="w-20 h-20 object-cover rounded-md border"
                   />
                   <button
@@ -166,6 +168,8 @@ export function ImageUpload({ value, onChange, multiple = false }: ImageUploadPr
               <Image
                 src={value}
                 alt="Uploaded"
+                width={128}
+                height={128}
                 className="w-32 h-32 object-cover rounded-md border"
               />
               <button
