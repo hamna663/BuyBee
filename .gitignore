@@ -13,8 +13,6 @@
 # testing
 /coverage
 
-APIs.md
-
 # next.js
 /.next/
 /out/
