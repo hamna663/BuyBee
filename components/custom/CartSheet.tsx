@@ -245,7 +245,7 @@ export function CartSheet({ trigger }: { trigger: React.ReactElement }) {
           )}
         </div>
 
-        {cart?.items?.length && cart.items.length > 0 && (
+        {Boolean(cart?.items?.length && cart.items.length > 0) && (
           <SheetFooter className="p-6 border-t border-white/10 bg-white/5 backdrop-blur-sm">
             <div className="w-full space-y-4">
               <div className="flex justify-between text-lg">

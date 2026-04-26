@@ -18,7 +18,11 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
   const offset = Number(searchParams.get("page") || "0");
   const limit = Number(searchParams.get("limit") || "10");
   const category = searchParams.get("category") || "";
-  const rating = Number(searchParams.get("rating"));
+  const ratingParam = searchParams.get("rating");
+  const rating =
+    ratingParam === null || ratingParam === ""
+      ? undefined
+      : Number(ratingParam);
   const minPrice = Number(searchParams.get("minPrice"));
   const maxPrice = Number(searchParams.get("maxPrice"));
   const sortBy = searchParams.get("sortBy") || "createdAt";
@@ -69,11 +73,9 @@ export const GET = async (req: NextRequest): Promise<NextResponse> => {
             },
           }),
 
-          ...(data.rating &&
+          ...(data.rating !== undefined &&
             !isNaN(Number(data.rating)) && {
-              $match: {
-                averageRating: { $gte: Number(data.rating) },
-              },
+              averageRating: { $gte: Number(data.rating) },
             }),
 
           ...(data.category && {

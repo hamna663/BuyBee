@@ -177,7 +177,7 @@ function ProductsContent() {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground pb-20">
+    <main className="min-h-screen mesh-gradient dark:mesh-gradient-dark text-foreground pb-20">
       <section className="mesh-gradient dark:mesh-gradient-dark py-20 px-6">
         <div className="container mx-auto">
           <div className="max-w-3xl space-y-4">
