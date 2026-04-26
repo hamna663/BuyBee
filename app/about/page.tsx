@@ -6,23 +6,18 @@ import {
   Trophy,
   UserGroupIcon,
 } from "@hugeicons/core-free-icons";
+import { PageHeader, PageShell } from "@/components/custom/PageShell";
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen mesh-gradient dark:mesh-gradient-dark pt-24 pb-12 px-4">
-      <div className="container mx-auto max-w-4xl space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-700">
-        <div className="text-center space-y-3">
-          <h1 className="text-4xl font-black tracking-tight text-gradient">
-            About BuyBee
-          </h1>
-          <p className="text-muted-foreground font-medium max-w-2xl mx-auto">
-            Redefining the digital shopping experience with premium quality and
-            unparalleled service.
-          </p>
-        </div>
+    <PageShell contentClassName="max-w-4xl space-y-12">
+      <PageHeader
+        title="About BuyBee"
+        description="Redefining the digital shopping experience with premium quality and unparalleled service."
+      />
 
         <div className="grid md:grid-cols-2 gap-6">
-          <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-xl p-2">
+          <Card className="glassmorphism dark:glassmorphism-dark border-none p-2">
             <CardContent className="p-6 space-y-4">
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                 <HugeiconsIcon
@@ -39,7 +34,7 @@ export default function AboutPage() {
             </CardContent>
           </Card>
 
-          <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-xl p-2">
+          <Card className="glassmorphism dark:glassmorphism-dark border-none p-2">
             <CardContent className="p-6 space-y-4">
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
                 <HugeiconsIcon icon={Trophy} className="h-5 w-5 text-primary" />
@@ -54,7 +49,7 @@ export default function AboutPage() {
           </Card>
         </div>
 
-        <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-xl overflow-hidden">
+        <Card className="glassmorphism dark:glassmorphism-dark border-none overflow-hidden">
           <CardContent className="p-8 md:p-12">
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div className="space-y-6">
@@ -83,7 +78,7 @@ export default function AboutPage() {
                   ))}
                 </div>
               </div>
-              <div className="bg-primary/5 rounded-2xl p-8 border border-primary/10 relative overflow-hidden group">
+              <div className="bg-primary/5 rounded-lg p-8 border border-primary/10 relative overflow-hidden group">
                 <div className="absolute -right-8 -top-8 w-32 h-32 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all duration-700" />
                 <HugeiconsIcon
                   icon={UserGroupIcon}
@@ -99,7 +94,6 @@ export default function AboutPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
-    </main>
+    </PageShell>
   );
 }

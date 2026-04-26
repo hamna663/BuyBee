@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { GridIcon } from "@hugeicons/core-free-icons";
+import { PageHeader, PageShell } from "@/components/custom/PageShell";
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<CategoryType[]>([]);
@@ -42,19 +43,16 @@ export default function CategoriesPage() {
   }
 
   return (
-    <main className="min-h-screen mesh-gradient dark:mesh-gradient-dark pt-24 pb-12 px-4">
-      <div className="container mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
+    <PageShell>
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-white/10 pb-8">
-          <div className="space-y-2">
-            <h1 className="text-4xl font-black tracking-tight text-gradient">
-              Market Segments
-            </h1>
-            <p className="text-muted-foreground font-medium text-sm">
-              Discover curated collections across all premium categories.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 bg-secondary/30 backdrop-blur-md p-1 rounded-lg border border-white/10">
-            <div className="px-4 py-2 bg-primary rounded-md flex items-center gap-2">
+          <PageHeader
+            title="Market Segments"
+            description="Discover curated collections across all premium categories."
+            align="left"
+            className="space-y-2"
+          />
+          <div className="flex items-center gap-2 bg-secondary/30 backdrop-blur-sm p-1 rounded-md border border-white/10">
+            <div className="px-4 py-2 bg-primary rounded-sm flex items-center gap-2">
               <HugeiconsIcon icon={GridIcon} className="h-4 w-4 text-white" />
               <span className="text-[10px] font-black uppercase tracking-widest text-white">Grid View</span>
             </div>
@@ -64,7 +62,7 @@ export default function CategoriesPage() {
         <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {categories.map((cat) => (
             <Link key={cat._id} href={`/products?category=${encodeURIComponent(cat.name)}`} className="group">
-              <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-xl overflow-hidden h-56 hover:shadow-2xl transition-all duration-500 relative">
+              <Card className="glassmorphism dark:glassmorphism-dark border-none overflow-hidden h-56 hover:shadow-xl transition-all duration-500 relative">
                 <Image
                   src={safeImage(cat.images?.[0])}
                   alt={cat.name}
@@ -90,7 +88,6 @@ export default function CategoriesPage() {
             </Link>
           ))}
         </div>
-      </div>
-    </main>
+    </PageShell>
   );
 }

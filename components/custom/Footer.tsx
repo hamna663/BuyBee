@@ -6,8 +6,10 @@ import { Facebook02Icon, InstagramIcon, TwitterIcon } from "@hugeicons/core-free
 
 export default function Footer() {
   return (
-    <footer className="bg-background border-t border-white/5 pt-20 pb-10">
-      <div className="mx-auto max-w-7xl px-6">
+    <footer className="relative overflow-hidden border-t border-primary/10 bg-gradient-to-br from-cyan-50 via-blue-50 to-violet-50 pt-20 pb-10 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950">
+      <div className="pointer-events-none absolute -top-28 -left-20 h-72 w-72 rounded-full bg-cyan-300/30 blur-3xl dark:bg-cyan-500/15" />
+      <div className="pointer-events-none absolute bottom-0 right-0 h-72 w-72 rounded-full bg-violet-300/30 blur-3xl dark:bg-violet-500/15" />
+      <div className="mx-auto max-w-7xl px-6 relative">
         <div className="grid gap-12 lg:grid-cols-4 md:grid-cols-2">
           {/* BRAND */}
           <div className="space-y-6">
@@ -26,7 +28,7 @@ export default function Footer() {
             </p>
             <div className="flex gap-4">
                {[Facebook02Icon, InstagramIcon, TwitterIcon].map((Icon, idx) => (
-                 <a key={idx} href="#" className="h-10 w-10 rounded-xl bg-secondary/50 flex items-center justify-center hover:bg-primary hover:text-white transition-all duration-300">
+                 <a key={idx} href="#" className="h-10 w-10 rounded-md bg-white/60 dark:bg-white/10 border border-white/30 dark:border-white/15 flex items-center justify-center hover:bg-primary hover:text-white transition-all duration-300">
                     <HugeiconsIcon icon={Icon} className="h-5 w-5" />
                  </a>
                ))}
@@ -65,16 +67,16 @@ export default function Footer() {
                <input 
                 type="email" 
                 placeholder="email@example.com" 
-                className="w-full h-14 bg-secondary/30 rounded-2xl px-6 border border-white/5 focus:border-primary/50 outline-none transition-all"
+                className="w-full h-14 bg-white/60 dark:bg-black/20 rounded-lg px-6 border border-white/20 dark:border-white/10 focus:border-primary/50 outline-none transition-all"
                />
-               <button className="absolute right-2 top-2 bottom-2 bg-primary text-white px-4 rounded-xl font-bold text-sm hover:scale-105 transition-all">
+               <button className="absolute right-2 top-2 bottom-2 bg-primary text-white px-4 rounded-md font-bold text-sm hover:scale-105 transition-all">
                   Join
                </button>
             </div>
           </div>
         </div>
 
-        <Separator className="my-16 bg-white/5" />
+        <Separator className="my-16 bg-primary/15 dark:bg-white/10" />
 
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground font-medium">
           <p>© {new Date().getFullYear()} BuyBee. Crafted with precision.</p>

@@ -9,13 +9,6 @@ import {
   SheetTrigger,
   SheetFooter,
 } from "@/components/ui/sheet";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -28,9 +21,8 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { CartType } from "@/models/cart";
+import { CheckoutAddressDialog } from "@/components/custom/CheckoutAddressDialog";
 
 type Item = {
   productId: {
@@ -273,136 +265,25 @@ export function CartSheet({ trigger }: { trigger: React.ReactElement }) {
                 >
                   View Cart
                 </Link>
-                <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
-                  <DialogTrigger
-                    render={
-                      <Button className="rounded-xl h-12 w-full shadow-lg shadow-primary/20">
-                        Checkout
-                      </Button>
-                    }
-                  />
-                  <DialogContent className="max-w-md rounded-[2rem] glassmorphism dark:glassmorphism-dark border-none">
-                    <DialogHeader>
-                      <DialogTitle className="text-2xl font-black">
-                        Shipping Address
-                      </DialogTitle>
-                    </DialogHeader>
-                    <form onSubmit={handleCheckout} className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="street"
-                          className="font-bold opacity-70 text-xs uppercase tracking-widest"
-                        >
-                          Street Address
-                        </Label>
-                        <Input
-                          id="street"
-                          required
-                          placeholder="123 Commerce St"
-                          className="h-12 rounded-xl bg-white/50 dark:bg-black/20"
-                          value={address.street}
-                          onChange={(e) =>
-                            setAddress({ ...address, street: e.target.value })
-                          }
-                        />
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label
-                            htmlFor="city"
-                            className="font-bold opacity-70 text-xs uppercase tracking-widest"
-                          >
-                            City
-                          </Label>
-                          <Input
-                            id="city"
-                            required
-                            placeholder="New York"
-                            className="h-12 rounded-xl bg-white/50 dark:bg-black/20"
-                            value={address.city}
-                            onChange={(e) =>
-                              setAddress({ ...address, city: e.target.value })
-                            }
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label
-                            htmlFor="state"
-                            className="font-bold opacity-70 text-xs uppercase tracking-widest"
-                          >
-                            State
-                          </Label>
-                          <Input
-                            id="state"
-                            required
-                            placeholder="NY"
-                            className="h-12 rounded-xl bg-white/50 dark:bg-black/20"
-                            value={address.state}
-                            onChange={(e) =>
-                              setAddress({ ...address, state: e.target.value })
-                            }
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label
-                            htmlFor="zipcode"
-                            className="font-bold opacity-70 text-xs uppercase tracking-widest"
-                          >
-                            ZIP Code
-                          </Label>
-                          <Input
-                            id="zipcode"
-                            required
-                            placeholder="10001"
-                            className="h-12 rounded-xl bg-white/50 dark:bg-black/20"
-                            value={address.zipcode}
-                            onChange={(e) =>
-                              setAddress({
-                                ...address,
-                                zipcode: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label
-                            htmlFor="country"
-                            className="font-bold opacity-70 text-xs uppercase tracking-widest"
-                          >
-                            Country
-                          </Label>
-                          <Input
-                            id="country"
-                            required
-                            placeholder="USA"
-                            className="h-12 rounded-xl bg-white/50 dark:bg-black/20"
-                            value={address.country}
-                            onChange={(e) =>
-                              setAddress({
-                                ...address,
-                                country: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
-                      </div>
-                      <Button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full h-14 rounded-2xl font-black text-lg mt-4 shadow-xl shadow-primary/20"
-                      >
-                        {loading ? "Processing..." : "Continue to Payment"}
-                      </Button>
-                    </form>
-                  </DialogContent>
-                </Dialog>
+                <Button
+                  className="rounded-xl h-12 w-full shadow-lg shadow-primary/20"
+                  onClick={() => setIsCheckoutOpen(true)}
+                >
+                  Checkout
+                </Button>
               </div>
             </div>
           </SheetFooter>
         )}
       </SheetContent>
+      <CheckoutAddressDialog
+        open={isCheckoutOpen}
+        onOpenChange={setIsCheckoutOpen}
+        address={address}
+        onAddressChange={setAddress}
+        onSubmit={handleCheckout}
+        loading={loading}
+      />
     </Sheet>
   );
 }

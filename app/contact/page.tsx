@@ -15,6 +15,7 @@ import {
   Clock01Icon, 
   SentIcon 
 } from "@hugeicons/core-free-icons";
+import { PageHeader, PageShell } from "@/components/custom/PageShell";
 
 export default function ContactPage() {
   const [name, setName] = useState("");
@@ -38,7 +39,7 @@ export default function ContactPage() {
       } else {
         toast.error("Failed to send message");
       }
-    } catch (error) {
+    } catch {
       toast.error("Something went wrong");
     } finally {
       setLoading(false);
@@ -46,21 +47,16 @@ export default function ContactPage() {
   };
 
   return (
-    <main className="min-h-screen mesh-gradient dark:mesh-gradient-dark pt-24 pb-12 px-4">
-      <div className="container mx-auto max-w-5xl space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-700">
-        <div className="text-center space-y-3">
-          <h1 className="text-4xl font-black tracking-tight text-gradient">
-            Get in Touch
-          </h1>
-          <p className="text-muted-foreground font-medium max-w-2xl mx-auto">
-            Have a question or need assistance? Our team is here to help you around the clock.
-          </p>
-        </div>
+    <PageShell contentClassName="max-w-5xl">
+      <PageHeader
+        title="Get in Touch"
+        description="Have a question or need assistance? Our team is here to help you around the clock."
+      />
 
         <div className="grid md:grid-cols-5 gap-8">
           {/* Contact Form */}
           <div className="md:col-span-3">
-            <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-xl overflow-hidden shadow-2xl">
+            <Card className="glassmorphism dark:glassmorphism-dark border-none overflow-hidden shadow-xl">
               <CardHeader className="p-8 pb-4">
                 <CardTitle className="text-2xl font-black flex items-center gap-3">
                   <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -89,7 +85,7 @@ export default function ContactPage() {
                     <Label htmlFor="message" className="text-[10px] uppercase tracking-widest font-black text-gray-700 dark:text-gray-300 ml-1">Message</Label>
                     <Textarea id="message" value={message} onChange={(e) => setMessage(e.target.value)} required placeholder="Write your message here..." className="min-h-[120px] rounded bg-secondary/30 border-white/5 text-xs" />
                   </div>
-                  <Button type="submit" className="w-full h-10 rounded shadow-lg shadow-primary/20 font-black text-xs transition-all hover:scale-[1.01]" disabled={loading}>
+                  <Button type="submit" className="w-full h-10 shadow-md shadow-primary/20 font-black text-xs transition-all hover:scale-[1.01]" disabled={loading}>
                     {loading ? "Transmitting..." : (
                       <span className="flex items-center gap-2">
                         <HugeiconsIcon icon={SentIcon} className="h-4 w-4" />
@@ -110,7 +106,7 @@ export default function ContactPage() {
               { icon: Location01Icon, title: "Our Office", detail: "123 Commerce St, SC 12345", sub: "United States" },
               { icon: Clock01Icon, title: "Business Hours", detail: "9AM - 6PM EST", sub: "Saturday: 10AM - 4PM" },
             ].map((info, i) => (
-              <Card key={i} className="glassmorphism dark:glassmorphism-dark border-none rounded-xl hover:shadow-xl transition-all duration-300 group">
+              <Card key={i} className="glassmorphism dark:glassmorphism-dark border-none hover:shadow-lg transition-all duration-300 group">
                 <CardContent className="p-5 flex items-center gap-4">
                   <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
                     <HugeiconsIcon icon={info.icon} className="h-5 w-5 text-primary" />
@@ -125,7 +121,6 @@ export default function ContactPage() {
             ))}
           </div>
         </div>
-      </div>
-    </main>
+    </PageShell>
   );
 }

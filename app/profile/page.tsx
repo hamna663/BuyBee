@@ -78,7 +78,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-background text-foreground">
+      <main className="min-h-screen mesh-gradient dark:mesh-gradient-dark text-foreground">
         <div className="container mx-auto py-10 px-4">
           <p>Loading...</p>
         </div>
@@ -88,7 +88,7 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <main className="min-h-screen bg-background text-foreground">
+      <main className="min-h-screen mesh-gradient dark:mesh-gradient-dark text-foreground">
         <div className="container mx-auto py-10 px-4">
           <p>Please sign in to view your profile.</p>
         </div>
@@ -97,7 +97,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground py-16 px-6">
+    <main className="min-h-screen mesh-gradient dark:mesh-gradient-dark text-foreground py-16 px-6">
       <div className="container mx-auto max-w-4xl">
         <div className="flex items-center gap-6 mb-12 animate-in fade-in slide-in-from-left-4 duration-700">
           <div className="h-24 w-24 rounded-3xl bg-primary/10 flex items-center justify-center text-primary border-4 border-white dark:border-white/5 shadow-xl">
@@ -111,7 +111,7 @@ export default function ProfilePage() {
 
         <div className="grid md:grid-cols-3 gap-10">
           <div className="md:col-span-2 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
-            <Card className="border-white/10 dark:bg-white/5 backdrop-blur-sm rounded-3xl overflow-hidden shadow-xl">
+            <Card className="app-card overflow-hidden rounded-2xl">
               <CardHeader className="bg-muted/30 pb-6 border-b border-white/5">
                 <CardTitle className="text-xl font-bold tracking-tight">Account Information</CardTitle>
               </CardHeader>
@@ -146,7 +146,7 @@ export default function ProfilePage() {
               </CardContent>
             </Card>
 
-            <Card className="border-white/10 dark:bg-white/5 backdrop-blur-sm rounded-3xl overflow-hidden shadow-xl">
+            <Card className="app-card overflow-hidden rounded-2xl">
               <CardHeader className="bg-muted/30 pb-6 border-b border-white/5">
                 <CardTitle className="text-xl font-bold tracking-tight">Security</CardTitle>
               </CardHeader>
@@ -163,7 +163,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-700 delay-300">
-            <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-3xl overflow-hidden shadow-2xl">
+            <Card className="app-card overflow-hidden rounded-2xl">
               <CardHeader className="pb-4">
                 <CardTitle className="text-lg font-bold">Quick Actions</CardTitle>
               </CardHeader>

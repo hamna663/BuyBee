@@ -67,7 +67,7 @@ export default function OrdersPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-background text-foreground">
+      <main className="min-h-screen mesh-gradient dark:mesh-gradient-dark text-foreground">
         <div className="container mx-auto py-10 px-4">
           <p>Loading orders...</p>
         </div>
@@ -76,7 +76,7 @@ export default function OrdersPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground py-16">
+    <main className="min-h-screen mesh-gradient dark:mesh-gradient-dark text-foreground py-16">
       <div className="container mx-auto px-6 max-w-5xl">
         <div className="flex items-center gap-4 mb-12">
           <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
@@ -93,7 +93,7 @@ export default function OrdersPage() {
         </div>
 
         {orders.length === 0 ? (
-          <Card className="border-dashed border-2 py-20 flex flex-col items-center justify-center bg-muted/20 rounded-3xl">
+          <Card className="app-card py-20 flex flex-col items-center justify-center rounded-2xl">
             <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center mb-6 text-muted-foreground">
               <HugeiconsIcon icon={ShoppingCartIcon} className="h-10 w-10" />
             </div>
@@ -111,7 +111,7 @@ export default function OrdersPage() {
             {orders.map((order) => (
               <Card
                 key={order._id}
-                className="group overflow-hidden border-white/10 dark:bg-white/5 backdrop-blur-sm rounded-3xl transition-all duration-300 hover:shadow-xl hover:scale-[1.01]"
+                className="group app-card app-card-hover overflow-hidden rounded-2xl hover:scale-[1.01]"
               >
                 <CardHeader className="pb-4">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

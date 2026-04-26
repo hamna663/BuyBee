@@ -4,13 +4,12 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import Image from "next/image";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Delete02Icon, ShoppingCartIcon } from "@hugeicons/core-free-icons";
 import Link from "next/link";
 import { toast } from "sonner";
+import { CheckoutAddressDialog } from "@/components/custom/CheckoutAddressDialog";
 
 type Product = {
   _id: string;
@@ -158,28 +157,31 @@ export default function CartPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto py-16 px-6 max-w-7xl">
-        <div className="flex items-center gap-4 mb-12">
-          <div className="h-12 w-12 rounded-2xl bg-muted animate-pulse" />
-          <div className="space-y-2">
-            <div className="h-8 w-48 bg-muted rounded-xl animate-pulse" />
-            <div className="h-4 w-32 bg-muted rounded-xl animate-pulse" />
+      <main className="min-h-screen mesh-gradient dark:mesh-gradient-dark py-16 px-6">
+        <div className="container mx-auto max-w-7xl">
+          <div className="flex items-center gap-4 mb-12">
+            <div className="h-12 w-12 rounded-2xl bg-muted animate-pulse" />
+            <div className="space-y-2">
+              <div className="h-8 w-48 bg-muted rounded-xl animate-pulse" />
+              <div className="h-4 w-32 bg-muted rounded-xl animate-pulse" />
+            </div>
+          </div>
+          <div className="grid lg:grid-cols-3 gap-12">
+            <div className="lg:col-span-2 space-y-6">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-40 bg-muted rounded-3xl animate-pulse" />
+              ))}
+            </div>
+            <div className="h-80 bg-muted rounded-3xl animate-pulse" />
           </div>
         </div>
-        <div className="grid lg:grid-cols-3 gap-12">
-          <div className="lg:col-span-2 space-y-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-40 bg-muted rounded-3xl animate-pulse" />
-            ))}
-          </div>
-          <div className="h-80 bg-muted rounded-3xl animate-pulse" />
-        </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="container mx-auto py-16 px-6 max-w-7xl">
+    <main className="min-h-screen mesh-gradient dark:mesh-gradient-dark py-16 px-6">
+      <div className="container mx-auto max-w-7xl">
       <div className="flex items-center gap-4 mb-12">
         <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
           <HugeiconsIcon icon={ShoppingCartIcon} className="h-6 w-6" />
@@ -191,7 +193,7 @@ export default function CartPage() {
       </div>
 
       {cartItems.length === 0 ? (
-        <Card className="border-dashed border-2 py-20 flex flex-col items-center justify-center bg-muted/20 rounded-3xl">
+        <Card className="app-card py-20 flex flex-col items-center justify-center rounded-2xl">
           <div className="h-20 w-20 rounded-full bg-muted flex items-center justify-center mb-6 text-muted-foreground">
             <HugeiconsIcon icon={ShoppingCartIcon} className="h-10 w-10" />
           </div>
@@ -210,7 +212,7 @@ export default function CartPage() {
               return (
                 <Card
                   key={item.productId._id}
-                  className="group overflow-hidden border-white/10 dark:bg-white/5 backdrop-blur-sm rounded-3xl transition-all duration-300 hover:shadow-xl"
+                  className="group app-card app-card-hover overflow-hidden rounded-2xl"
                 >
                   <CardContent className="flex flex-col sm:flex-row items-center gap-6 p-6">
                     <div className="relative h-32 w-32 rounded-2xl overflow-hidden shrink-0">
@@ -285,7 +287,7 @@ export default function CartPage() {
 
           {/* Summary + Checkout */}
           <div className="space-y-8">
-            <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-3xl overflow-hidden shadow-2xl">
+            <Card className="app-card overflow-hidden rounded-2xl">
               <CardContent className="p-8 space-y-6">
                 <h2 className="text-2xl font-bold tracking-tight mb-6">Order Summary</h2>
                 <div className="space-y-4">
@@ -306,112 +308,31 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                {!showCheckout && (
-                  <Button
-                    className="w-full h-14 rounded-2xl shadow-lg hover:shadow-primary/20 text-lg font-bold tracking-tight transition-all duration-300 hover:scale-[1.02]"
-                    onClick={() => setShowCheckout(true)}
-                    disabled={cartItems.length === 0}
-                  >
-                    Proceed to Checkout
-                  </Button>
-                )}
+                <Button
+                  className="w-full h-14 rounded-2xl shadow-lg hover:shadow-primary/20 text-lg font-bold tracking-tight transition-all duration-300 hover:scale-[1.02]"
+                  onClick={() => setShowCheckout(true)}
+                  disabled={cartItems.length === 0}
+                >
+                  Proceed to Checkout
+                </Button>
               </CardContent>
             </Card>
-
-            {showCheckout && (
-              <Card className="border-white/10 dark:bg-white/5 backdrop-blur-sm rounded-3xl overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
-                <CardContent className="p-8 space-y-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-xl font-bold tracking-tight">Shipping Details</h2>
-                    <Button variant="ghost" size="sm" className="h-8 rounded-lg" onClick={() => setShowCheckout(false)}>
-                      Cancel
-                    </Button>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="street" className="text-xs uppercase tracking-widest font-bold opacity-70">
-                        Street Address
-                      </Label>
-                      <Input
-                        id="street"
-                        className="h-12 bg-muted/50 border-white/10 rounded-xl"
-                        value={address.street}
-                        onChange={(e) => setAddress({ ...address, street: e.target.value })}
-                        placeholder="123 Main St"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="city" className="text-xs uppercase tracking-widest font-bold opacity-70">City</Label>
-                        <Input
-                          id="city"
-                          className="h-12 bg-muted/50 border-white/10 rounded-xl"
-                          value={address.city}
-                          onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                          placeholder="New York"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="state" className="text-xs uppercase tracking-widest font-bold opacity-70">State</Label>
-                        <Input
-                          id="state"
-                          className="h-12 bg-muted/50 border-white/10 rounded-xl"
-                          value={address.state}
-                          onChange={(e) => setAddress({ ...address, state: e.target.value })}
-                          placeholder="NY"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="country" className="text-xs uppercase tracking-widest font-bold opacity-70">Country</Label>
-                        <Input
-                          id="country"
-                          className="h-12 bg-muted/50 border-white/10 rounded-xl"
-                          value={address.country}
-                          onChange={(e) => setAddress({ ...address, country: e.target.value })}
-                          placeholder="USA"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="zipcode" className="text-xs uppercase tracking-widest font-bold opacity-70">Zip Code</Label>
-                        <Input
-                          id="zipcode"
-                          className="h-12 bg-muted/50 border-white/10 rounded-xl"
-                          value={address.zipcode}
-                          onChange={(e) => setAddress({ ...address, zipcode: e.target.value })}
-                          placeholder="10001"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button
-                    className="w-full h-14 rounded-2xl shadow-lg hover:shadow-primary/20 text-lg font-bold tracking-tight transition-all duration-300 hover:scale-[1.02]"
-                    onClick={handleCheckout}
-                    disabled={checkoutLoading}
-                  >
-                    {checkoutLoading ? (
-                      <span className="flex items-center gap-2">
-                        <span className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                        Processing…
-                      </span>
-                    ) : (
-                      "Pay with Stripe →"
-                    )}
-                  </Button>
-                  <p className="text-center text-xs text-muted-foreground">
-                    🔒 Secure payment powered by Stripe
-                  </p>
-                </CardContent>
-              </Card>
-            )}
           </div>
         </div>
       )}
-    </div>
+
+      <CheckoutAddressDialog
+        open={showCheckout}
+        onOpenChange={setShowCheckout}
+        address={address}
+        onAddressChange={setAddress}
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleCheckout();
+        }}
+        loading={checkoutLoading}
+      />
+      </div>
+    </main>
   );
 }

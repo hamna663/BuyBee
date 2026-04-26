@@ -39,13 +39,13 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
+  --radius-sm: calc(var(--radius) * 0.7);
+  --radius-md: calc(var(--radius) * 0.9);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-xl: calc(var(--radius) * 1.2);
+  --radius-2xl: calc(var(--radius) * 1.5);
+  --radius-3xl: calc(var(--radius) * 1.8);
+  --radius-4xl: calc(var(--radius) * 2.1);
 }
 
 :root {
@@ -72,7 +72,7 @@
   --chart-3: oklch(0.609 0.126 221.723);
   --chart-4: oklch(0.52 0.105 223.128);
   --chart-5: oklch(0.45 0.085 224.283);
-  --radius: 0.3rem;
+  --radius: 0.24rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.609 0.126 221.723);
@@ -129,11 +129,17 @@
   }
 }
 @layer utilities {
+  .app-card {
+    @apply border border-white/20 dark:border-white/10 bg-white/70 dark:bg-white/5 backdrop-blur-sm shadow-lg;
+  }
+  .app-card-hover {
+    @apply transition-all duration-300 hover:shadow-xl;
+  }
   .glassmorphism {
-    @apply bg-white/40 backdrop-blur-md border border-white/20 shadow-xl;
+    @apply bg-white/35 backdrop-blur-sm border border-white/15 shadow-lg;
   }
   .glassmorphism-dark {
-    @apply bg-black/40 backdrop-blur-md border border-white/10 shadow-xl;
+    @apply bg-black/35 backdrop-blur-sm border border-white/10 shadow-lg;
   }
   .mesh-gradient {
     background-color: hsla(0, 0%, 100%, 1);

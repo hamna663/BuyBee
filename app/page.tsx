@@ -48,13 +48,13 @@ export default function Page() {
   };
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
+    <main className="min-h-screen mesh-gradient dark:mesh-gradient-dark text-foreground">
       {/* HERO */}
       <section className="relative overflow-hidden pt-20 pb-32">
         {/* Background blobs */}
         <div className="absolute top-0 left-0 w-full h-full -z-10 overflow-hidden">
-          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px] animate-pulse" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/20 rounded-full blur-[100px] animate-pulse delay-700" />
+          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/15 rounded-full blur-[120px] animate-pulse" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-blue-500/15 rounded-full blur-[100px] animate-pulse delay-700" />
         </div>
 
         <div className="mx-auto max-w-7xl px-6 grid lg:grid-cols-2 gap-16 items-center">
@@ -158,11 +158,11 @@ export default function Page() {
         <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-4">
           {loading
             ? Array.from({ length: 4 }).map((_, i) => (
-                <Card key={i} className="h-48 animate-pulse bg-muted rounded-2xl" />
+                <Card key={i} className="app-card h-48 animate-pulse rounded-2xl" />
               ))
             : categories.slice(0, 4).map((cat) => (
                 <Link key={cat._id} href={`/products?category=${encodeURIComponent(cat.name)}`}>
-                  <Card className="relative overflow-hidden group h-48 border-none rounded-3xl shadow-lg hover:shadow-2xl transition-all duration-500">
+                  <Card className="relative overflow-hidden group app-card h-48 rounded-2xl app-card-hover duration-500">
                     <Image
                       src={safeImage(cat.images?.[0])}
                       alt={cat.name}
@@ -183,7 +183,7 @@ export default function Page() {
       </section>
 
       {/* PRODUCTS */}
-      <section className="bg-muted/30 py-24">
+      <section className="bg-white/30 dark:bg-black/10 backdrop-blur-sm py-24">
         <div className="mx-auto max-w-7xl px-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-12">
             <div className="space-y-2">
@@ -202,7 +202,7 @@ export default function Page() {
           <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3">
             {loading
               ? Array.from({ length: 6 }).map((_, i) => (
-                  <Card key={i} className="h-96 animate-pulse bg-muted rounded-2xl" />
+                  <Card key={i} className="app-card h-96 animate-pulse rounded-2xl" />
                 ))
               : products.slice(0, 6).map((product) => (
                   <ProductCard key={product._id} product={product} />

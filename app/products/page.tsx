@@ -24,6 +24,7 @@ import {
   ArrowUpDownIcon,
   PackageIcon
 } from "@hugeicons/core-free-icons";
+import { PageHeader } from "@/components/custom/PageShell";
 
 type FilterState = {
   category: string;
@@ -53,6 +54,10 @@ function ProductsContent() {
 
   // Debounced filters state
   const [debouncedFilters, setDebouncedFilters] = useState<FilterState>(filters);
+  const filterFieldClass =
+    "h-9 bg-white/60 dark:bg-black/40 border-white/20 rounded-sm shadow-xs text-xs";
+  const filterDropdownClass =
+    "rounded-md border-white/10 glassmorphism dark:glassmorphism-dark";
 
   useEffect(() => {
     const search = searchParams.get("search");
@@ -176,12 +181,16 @@ function ProductsContent() {
       <section className="mesh-gradient dark:mesh-gradient-dark py-20 px-6">
         <div className="container mx-auto">
           <div className="max-w-3xl space-y-4">
-            <h1 className="text-4xl font-black tracking-tight text-gray-900 dark:text-white">
-              Explore Our <span className="text-gradient">Collection</span>
-            </h1>
-            <p className="text-base text-gray-600 dark:text-gray-400 font-medium">
-              Find exactly what you need with our advanced filters and search.
-            </p>
+            <PageHeader
+              title={
+                <>
+                  Explore Our <span className="text-gradient">Collection</span>
+                </>
+              }
+              description="Find exactly what you need with our advanced filters and search."
+              align="left"
+              className="space-y-4"
+            />
           </div>
         </div>
       </section>
@@ -189,7 +198,7 @@ function ProductsContent() {
       <div className="container mx-auto px-6 -mt-10">
         {/* Search and Filters */}
         <div className="space-y-8">
-          <Card className="glassmorphism dark:glassmorphism-dark border-none rounded-xl shadow-xl p-0 overflow-hidden">
+          <Card className="glassmorphism dark:glassmorphism-dark border-none shadow-lg p-0 overflow-hidden">
             <CardContent className="p-6">
               <div className="flex flex-col lg:flex-row gap-8 items-start lg:items-end">
                 {/* Search */}
@@ -198,7 +207,7 @@ function ProductsContent() {
                     <div className="relative group">
                       <Input
                         placeholder="Search our catalog..."
-                        className="h-9 pl-9 bg-white/60 dark:bg-black/40 border-white/20 rounded shadow-sm text-xs focus-visible:ring-primary/30"
+                        className={`${filterFieldClass} pl-9 focus-visible:ring-primary/30`}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -218,10 +227,10 @@ function ProductsContent() {
                       value={filters.category}
                       onValueChange={(value) => handleFilterChange("category", value)}
                     >
-                      <SelectTrigger className="h-9 bg-white/60 dark:bg-black/40 border-white/20 rounded shadow-sm text-xs">
+                      <SelectTrigger className={filterFieldClass}>
                         <SelectValue placeholder="All" />
                       </SelectTrigger>
-                      <SelectContent className="rounded-xl border-white/10 glassmorphism dark:glassmorphism-dark">
+                      <SelectContent className={filterDropdownClass}>
                         <SelectItem value="">All Categories</SelectItem>
                         {categories.map((cat) => (
                           <SelectItem key={cat._id} value={cat.name}>
@@ -239,14 +248,14 @@ function ProductsContent() {
                       <Input
                         type="number"
                         placeholder="Min"
-                        className="h-9 bg-white/60 dark:bg-black/40 border-white/20 rounded shadow-sm text-xs"
+                        className={filterFieldClass}
                         value={filters.minPrice}
                         onChange={(e) => handleFilterChange("minPrice", e.target.value)}
                       />
                       <Input
                         type="number"
                         placeholder="Max"
-                        className="h-9 bg-white/60 dark:bg-black/40 border-white/20 rounded shadow-sm text-xs"
+                        className={filterFieldClass}
                         value={filters.maxPrice}
                         onChange={(e) => handleFilterChange("maxPrice", e.target.value)}
                       />
@@ -260,10 +269,10 @@ function ProductsContent() {
                       value={filters.rating}
                       onValueChange={(value) => handleFilterChange("rating", value)}
                     >
-                      <SelectTrigger className="h-9 bg-white/60 dark:bg-black/40 border-white/20 rounded shadow-sm text-xs">
+                      <SelectTrigger className={filterFieldClass}>
                         <SelectValue placeholder="Any" />
                       </SelectTrigger>
-                      <SelectContent className="rounded-xl border-white/10 glassmorphism dark:glassmorphism-dark">
+                      <SelectContent className={filterDropdownClass}>
                         <SelectItem value="">Any Rating</SelectItem>
                         <SelectItem value="4">4+ Stars</SelectItem>
                         <SelectItem value="3">3+ Stars</SelectItem>
@@ -278,13 +287,13 @@ function ProductsContent() {
                       value={filters.sortOrder}
                       onValueChange={(value) => handleFilterChange("sortOrder", value)}
                     >
-                      <SelectTrigger className="h-9 bg-white/60 dark:bg-black/40 border-white/20 rounded shadow-sm text-xs">
+                      <SelectTrigger className={filterFieldClass}>
                         <div className="flex items-center gap-2">
                           <HugeiconsIcon icon={ArrowUpDownIcon} className="h-3 w-3 opacity-50" />
                           <SelectValue />
                         </div>
                       </SelectTrigger>
-                      <SelectContent className="rounded-xl border-white/10 glassmorphism dark:glassmorphism-dark">
+                      <SelectContent className={filterDropdownClass}>
                         <SelectItem value="desc">Newest First</SelectItem>
                         <SelectItem value="asc">Oldest First</SelectItem>
                       </SelectContent>
@@ -293,11 +302,11 @@ function ProductsContent() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button variant="ghost" onClick={clearFilters} className="h-9 rounded-lg text-muted-foreground hover:text-primary text-xs flex items-center gap-2">
+                  <Button variant="ghost" onClick={clearFilters} className="h-9 text-muted-foreground hover:text-primary text-xs flex items-center gap-2">
                     <HugeiconsIcon icon={Cancel01Icon} className="h-4 w-4" />
                     Reset
                   </Button>
-                  <Button onClick={handleSearch} className="h-9 px-6 rounded-lg shadow-lg shadow-primary/20 hover:shadow-primary/40 transition-all text-xs font-black uppercase tracking-widest">
+                  <Button onClick={handleSearch} className="h-9 px-6 shadow-md shadow-primary/20 hover:shadow-primary/40 transition-all text-xs font-black uppercase tracking-widest">
                     Update Results
                   </Button>
                 </div>
@@ -316,7 +325,7 @@ function ProductsContent() {
             {productsLoading ? (
               <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <Card key={i} className="overflow-hidden border-none glassmorphism dark:glassmorphism-dark rounded-xl h-[400px]">
+                  <Card key={i} className="overflow-hidden border-none glassmorphism dark:glassmorphism-dark h-[400px]">
                     <div className="aspect-square bg-muted/40 animate-pulse" />
                     <div className="p-4 space-y-3">
                       <div className="h-4 w-2/3 bg-muted/60 animate-pulse rounded" />
@@ -330,13 +339,13 @@ function ProductsContent() {
                 ))}
               </div>
             ) : products.length === 0 ? (
-              <Card className="glassmorphism dark:glassmorphism-dark border-none py-32 flex flex-col items-center justify-center rounded-xl shadow-xl">
+              <Card className="glassmorphism dark:glassmorphism-dark border-none py-32 flex flex-col items-center justify-center shadow-lg">
                 <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mb-6">
                   <HugeiconsIcon icon={PackageIcon} className="h-10 w-10 text-primary opacity-50" />
                 </div>
                 <h3 className="text-2xl font-black mb-2">No matches found</h3>
                 <p className="text-sm text-muted-foreground font-medium mb-8">Try adjusting your filters or search keywords.</p>
-                <Button variant="outline" onClick={clearFilters} className="rounded-lg h-10 px-8 font-black uppercase tracking-widest text-[10px]">
+                <Button variant="outline" onClick={clearFilters} className="h-10 px-8 font-black uppercase tracking-widest text-[10px]">
                   Reset All Filters
                 </Button>
               </Card>
