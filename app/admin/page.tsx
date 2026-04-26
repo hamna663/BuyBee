@@ -225,29 +225,7 @@ function AdminContent() {
     }
   };
 
-// State for customer filter
-const [selectedCustomer, setSelectedCustomer] = useState<string>("all");
-// List of customers for the dropdown
-const [customers, setCustomers] = useState<any[]>([]);
-
-// Fetch customers (admin only)
-const fetchCustomers = useCallback(async () => {
-  try {
-    const token = localStorage.getItem("token");
-    const res = await fetch(`/api/admin/users?role=customer`, {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    });
-    const data = await res.json();
-    if (res.ok) {
-      setCustomers(data.users || []);
-    } else {
-      console.error("Failed to fetch customers:", data.error || res.statusText);
-    }
-  } catch (err) {
-    console.error("Failed to fetch customers:", err);
-  }
-}, []);
+  const [orderStatus, setOrderStatus] = useState<string>("all");
 
   // Fetch orders
   const fetchOrders =useCallback(
@@ -277,15 +255,9 @@ const fetchCustomers = useCallback(async () => {
     }
   },[orderStatus])
 
-  // Load customers on component mount
-  useEffect(() => {
-    fetchCustomers();
-  }, []);
-
-  // Fetch orders when filters change
   useEffect(() => {
     fetchOrders();
-  }, [fetchOrders]);
+  }, [orderStatus]);
 
   // Fetch products
   const fetchProducts = async () => {
