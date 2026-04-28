@@ -1,51 +1,39 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { useEffect, useState } from "react";
-import { ProductType } from "@/models/products";
-import { CategoryType } from "@/models/category";
 import Image from "next/image";
 import Link from "next/link";
-
 import ProductCard from "@/components/custom/ProductCard";
+import HeroSearch from "@/components/custom/HeroSearch";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Menu01Icon, ShoppingCartIcon } from "@hugeicons/core-free-icons";
+import { ShoppingCartIcon } from "@hugeicons/core-free-icons";
 
-export default function Page() {
-  const [products, setProducts] = useState<ProductType[]>([]);
-  const [categories, setCategories] = useState<CategoryType[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
+// Server components data fetching
+import { connectToDatabase } from "@/config/db";
+import { Product, ProductType } from "@/models/products";
+import { Category, CategoryType } from "@/models/category";
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const [pRes, cRes] = await Promise.all([
-        fetch("/api/products"),
-        fetch("/api/categories"),
-      ]);
+export default async function Page() {
+  await connectToDatabase();
+  
+  // Fetch top 6 products and top 4 categories directly from the database
+  const rawProducts = await Product.find({}).sort({ createdAt: -1 }).limit(6).lean();
+  const rawCategories = await Category.find({}).limit(4).lean();
 
-      const pData = await pRes.json();
-      const cData = await cRes.json();
+  const products = rawProducts.map((p: ProductType) => ({
+    ...p,
+    _id: p._id.toString(),
+    categoryId: p.categoryId ? p.categoryId.toString() : undefined,
+    createdAt: p.createdAt?.toISOString(),
+    updatedAt: p.updatedAt?.toISOString(),
+  })) as unknown as ProductType[];
 
-      setProducts(pData.products || []);
-      setCategories(cData.categories || []);
-      setLoading(false);
-    };
-
-    fetchData();
-  }, []);
+  const categories = rawCategories.map((c: CategoryType) => ({
+    ...c,
+    _id: c._id.toString(),
+  })) as unknown as CategoryType[];
 
   const safeImage = (img?: string) =>
     img && img.startsWith("http") ? img : "/placeholder.png";
-
-  const handleSearch = () => {
-    if (searchTerm.trim()) {
-      // Redirect to products page with search
-      window.location.href = `/products?search=${encodeURIComponent(searchTerm)}`;
-    }
-  };
 
   return (
     <main className="min-h-screen mesh-gradient dark:mesh-gradient-dark text-foreground">
@@ -76,29 +64,7 @@ export default function Page() {
               Curating the finest selection of premium essentials. Experience the perfect blend of luxury, comfort, and innovation.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <div className="relative flex-1 group max-w-md">
-                <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
-                <Input
-                  placeholder="Search your favorites..."
-                  className="relative h-11 pl-12 bg-white/50 dark:bg-black/20 backdrop-blur-xl border-white/20 dark:border-white/10 rounded-lg shadow-xl transition-all duration-300 text-sm"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                />
-                <HugeiconsIcon 
-                  icon={Menu01Icon} 
-                  className="absolute left-5 top-1/2 -translate-y-1/2 text-primary h-6 w-6" 
-                />
-              </div>
-              <Button 
-                size="lg" 
-                className="h-11 px-6 rounded-lg shadow-xl bg-primary hover:bg-primary/90 hover:scale-[1.02] active:scale-95 transition-all duration-300 font-bold text-sm"
-                onClick={handleSearch}
-              >
-                Start Exploring
-              </Button>
-            </div>
+            <HeroSearch />
 
             <div className="flex items-center gap-8 pt-6 border-t border-gray-100 dark:border-white/5">
               <div>
@@ -120,6 +86,7 @@ export default function Page() {
                 src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1000&auto=format&fit=crop"
                 alt="Hero Product"
                 fill
+                priority
                 className="object-cover scale-105 group-hover:scale-100 transition-transform duration-1000"
               />
               <div className="absolute bottom-8 left-8 right-8 glassmorphism dark:glassmorphism-dark p-6 rounded-2xl translate-y-4 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-500">
@@ -156,29 +123,25 @@ export default function Page() {
         </div>
 
         <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-4">
-          {loading
-            ? Array.from({ length: 4 }).map((_, i) => (
-                <Card key={i} className="app-card h-48 animate-pulse rounded-2xl" />
-              ))
-            : categories.slice(0, 4).map((cat) => (
-                <Link key={cat._id} href={`/products?category=${encodeURIComponent(cat.name)}`}>
-                  <Card className="relative overflow-hidden group app-card h-48 rounded-2xl app-card-hover duration-500">
-                    <Image
-                      src={safeImage(cat.images?.[0])}
-                      alt={cat.name}
-                      fill
-                      className="object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
+          {categories.map((cat) => (
+            <Link key={cat._id} href={`/products?category=${encodeURIComponent(cat.name)}`}>
+              <Card className="relative overflow-hidden group app-card h-48 rounded-2xl app-card-hover duration-500">
+                <Image
+                  src={safeImage(cat.images?.[0])}
+                  alt={cat.name}
+                  fill
+                  className="object-cover group-hover:scale-110 transition-transform duration-700"
+                />
 
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent group-hover:from-primary/80 transition-colors duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent group-hover:from-primary/80 transition-colors duration-500" />
 
-                    <CardContent className="relative z-10 flex flex-col justify-end h-full p-6 text-white">
-                      <p className="text-xs uppercase tracking-widest opacity-90 mb-1">Explore</p>
-                      <h4 className="text-xl font-bold tracking-tight">{cat.name}</h4>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
+                <CardContent className="relative z-10 flex flex-col justify-end h-full p-6 text-white">
+                  <p className="text-xs uppercase tracking-widest opacity-90 mb-1">Explore</p>
+                  <h4 className="text-xl font-bold tracking-tight">{cat.name}</h4>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
         </div>
       </section>
 
@@ -200,13 +163,9 @@ export default function Page() {
           </div>
 
           <div className="grid gap-10 sm:grid-cols-2 md:grid-cols-3">
-            {loading
-              ? Array.from({ length: 6 }).map((_, i) => (
-                  <Card key={i} className="app-card h-96 animate-pulse rounded-2xl" />
-                ))
-              : products.slice(0, 6).map((product) => (
-                  <ProductCard key={product._id} product={product} />
-                ))}
+            {products.map((product) => (
+              <ProductCard key={product._id} product={product} />
+            ))}
           </div>
         </div>
       </section>

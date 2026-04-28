@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/custom/Navbar";
 import Footer from "@/components/custom/Footer";
 import { Toaster } from "sonner";
+import { SpeedInsights } from "@vercel/speed-insights/next"
+import { Analytics } from "@vercel/analytics/next"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -42,6 +44,8 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-screen flex flex-col">
+        <SpeedInsights />
+        <Analytics />
         <Navbar />
         <main className="flex-1">
           {children}

@@ -43,6 +43,7 @@ export function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const isActive = (href: string) => pathname === href;
 
@@ -123,6 +124,10 @@ export function Navbar() {
       console.error("Logout failed:", error);
     }
   };
+
+  if (pathname?.startsWith('/auth')) {
+    return null;
+  }
 
   return (
     <nav className="sticky top-0 z-50 w-full glassmorphism dark:glassmorphism-dark border-b border-white/10">
@@ -279,7 +284,7 @@ export function Navbar() {
 
         {/* MOBILE */}
         <div className="md:hidden">
-          <Sheet>
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger>
               <HugeiconsIcon icon={Menu01Icon} className="h-5 w-5" />
             </SheetTrigger>
@@ -290,6 +295,7 @@ export function Navbar() {
                 <Link
                   href="/"
                   className="flex items-center text-primary font-semibold"
+                  onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <Image
                     src="/logo.png"
@@ -307,19 +313,33 @@ export function Navbar() {
                     <Link
                       key={link.href}
                       href={link.href}
-                      className={cn(
-                        "text-sm font-medium",
-                        isActive(link.href)
-                          ? "text-primary"
-                          : "text-foreground hover:text-primary",
-                      )}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="relative w-fit text-sm font-medium"
                     >
-                      {link.label}
+                      <span
+                        className={cn(
+                          "transition-colors",
+                          isActive(link.href)
+                            ? "text-primary"
+                            : "text-foreground hover:text-primary",
+                        )}
+                      >
+                        {link.label}
+                      </span>
+                      {/* underline animation */}
+                      <span
+                        className={cn(
+                          "absolute left-0 -bottom-1 h-0.5 w-full origin-left scale-x-0 transition-transform duration-300",
+                          "bg-primary",
+                          isActive(link.href) && "scale-x-100",
+                        )}
+                      />
                     </Link>
                   ))}
                   {isAdmin && (
                     <Link
                       href="/admin"
+                      onClick={() => setIsMobileMenuOpen(false)}
                       className={cn(
                         "text-sm font-black uppercase tracking-widest flex items-center gap-2",
                         isActive("/admin")
@@ -337,7 +357,7 @@ export function Navbar() {
                 <div className="flex flex-col gap-3 pt-6 border-t border-border">
                   {!isLoggedIn ? (
                     <>
-                      <Link href="/auth/signin">
+                      <Link href="/auth/signin" onClick={() => setIsMobileMenuOpen(false)}>
                         <Button
                           variant="ghost"
                           className="w-full justify-start gap-2"
@@ -349,7 +369,7 @@ export function Navbar() {
                           Login
                         </Button>
                       </Link>
-                      <Link href="/auth/signup">
+                      <Link href="/auth/signup" onClick={() => setIsMobileMenuOpen(false)}>
                         <Button className="w-full justify-start gap-2">
                           <HugeiconsIcon
                             icon={UserAdd02Icon}
@@ -375,7 +395,7 @@ export function Navbar() {
                           </Button>
                         }
                       />
-                      <Link href="/profile">
+                      <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)}>
                         <Button
                           variant="secondary"
                           className="w-full justify-start gap-2"
@@ -384,7 +404,7 @@ export function Navbar() {
                           Profile
                         </Button>
                       </Link>
-                      <Link href="/orders">
+                      <Link href="/orders" onClick={() => setIsMobileMenuOpen(false)}>
                         <Button
                           variant="ghost"
                           className="w-full justify-start gap-2"
@@ -397,7 +417,7 @@ export function Navbar() {
                         </Button>
                       </Link>
                       {isAdmin && (
-                        <Link href="/admin">
+                        <Link href="/admin" onClick={() => setIsMobileMenuOpen(false)}>
                           <Button
                             variant="ghost"
                             className="w-full justify-start gap-2"
@@ -413,7 +433,10 @@ export function Navbar() {
                       <Button
                         variant="ghost"
                         className="w-full justify-start gap-2 text-red-500"
-                        onClick={handleLogout}
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          handleLogout();
+                        }}
                       >
                         <HugeiconsIcon
                           icon={Logout01Icon}
